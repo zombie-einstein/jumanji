@@ -47,8 +47,7 @@ class PredatorPreyViewer(Viewer):
         self._animation: Optional[matplotlib.animation.Animation] = None
 
     def render(self, state: State) -> None:
-        """
-        Render frames of the environment for a given state using matplotlib.
+        """Render a frame of the environment for a given state using matplotlib.
 
         Args:
             state: State object containing the current dynamics of the environment.
@@ -62,8 +61,7 @@ class PredatorPreyViewer(Viewer):
     def animate(
         self, states: Sequence[State], interval: int, save_path: Optional[str]
     ) -> matplotlib.animation.FuncAnimation:
-        """
-        Create an animation from a sequence of states.
+        """Create an animation from a sequence of states.
 
         Args:
             states: sequence of `State` corresponding to subsequent timesteps.

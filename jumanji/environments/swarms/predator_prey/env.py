@@ -38,8 +38,7 @@ from .viewer import PredatorPreyViewer
 
 
 class PredatorPrey(Environment):
-    """
-    A predator and prey flock environment
+    """A predator and prey flock environment
 
     Environment modelling two swarms of agent types, predators
     who are rewarded for avoiding pre agents, and conversely
@@ -59,19 +58,19 @@ class PredatorPrey(Environment):
         - prey: jax array (float) of shape (num_prey, 2 * num_vision)
 
     - action: `Actions`
-        Individual agent actions. Each agent's actions rotate and
+        Arrays of individual agent actions. Each agents actions rotate and
         accelerate/decelerate the agent as [rotation, acceleration] on the range
-        [-1, 1] which are then scaled to update agent velocities within
-        a given parameters.
+        [-1, 1]. These values are then scaled to update agent velocities within
+        given parameters.
 
         - predators: jax array (float) of shape (num_predators, 2)
         - prey: jax array (float) of shape (num_prey, 2)
 
     - reward: `Rewards`
-        Individual agent rewards. Rewards can either be generated sparsely
-        when agent collide, or be generated based on distance
-        to other agents (hence they can be dependent on the
-        number and density of agents).
+        Arrays of individual agent rewards. Rewards can either be generated
+        sparsely applied when agent collide, or be generated based on distance
+        to other agents (hence they are dependent on the number and density
+        of agents).
 
         - predators: jax array (float) of shape (num_predators,)
         - prey: jax array (float) of shape (num_prey,)
@@ -149,15 +148,14 @@ class PredatorPrey(Environment):
         max_steps: int = 10_000,
         viewer: Optional[Viewer[State]] = None,
     ) -> None:
-        """
-        Instantiates a `PredatorPrey` environment
+        """Instantiates a `PredatorPrey` environment
 
         Note:
-            The environment has dimensions [1.0, 1.0]
-            and so values should be scaled appropriately,
-            Also not that performance is dependent
-            on agent vision and interaction ranges, where
-            larger values can lead to large number of
+            The environment is square with dimensions
+            `[1.0, 1.0]` so parameters should be scaled
+            appropriately. Also note that performance is
+            dependent on agent vision and interaction ranges,
+            where larger values can lead to large number of
             agent interactions.
 
         Args:
@@ -190,7 +188,7 @@ class PredatorPrey(Environment):
             predator_max_speed: Maximum speed a predator agent can move at.
             predator_view_angle: Predator agent local view angle. Should be
                 a value from [0,1] representing a fraction of pi radians.
-                The view cone pf an agent goes from +- of the view angle
+                The view cone of an agent goes from +- of the view angle
                 relative to its heading.
             prey_max_rotate: Maximum rotation prey agents can
                 turn within a step. Should be a value from [0,1]
@@ -201,7 +199,7 @@ class PredatorPrey(Environment):
             prey_max_speed: Maximum speed a prey agent can move at.
             prey_view_angle: Prey agent local view angle. Should be
                 a value from [0,1] representing a fraction of pi radians.
-                The view cone pf an agent goes from +- of the view angle
+                The view cone of an agent goes from +- of the view angle
                 relative to its heading.
             max_steps: Maximum number of environment steps before termination
             viewer: `Viewer` used for rendering. Defaults to `PredatorPreyViewer`.
@@ -250,11 +248,10 @@ class PredatorPrey(Environment):
         )
 
     def reset(self, key: chex.PRNGKey) -> Tuple[State, TimeStep[Observation]]:
-        """
-        Randomly initialise predator and prey positions and velocities.
+        """Randomly initialise predator and prey positions and velocities.
 
         Args:
-            key: random key used to reset the environment.
+            key: Random key used to reset the environment.
 
         Returns:
             state: Agent states.
@@ -272,16 +269,18 @@ class PredatorPrey(Environment):
     def step(
         self, state: State, action: Actions
     ) -> Tuple[State, TimeStep[Observation]]:
-        """
-        Update agents velocities and consequently their positions
+        """Environment update
+
+        Update agent velocities and consequently their positions,
+        them generate new local views and rewards.
 
         Args:
             state: Agent states.
-            action: Predator and prey agent arrays of individual actions.
+            action: Arrays of predator and prey individual actions.
 
         Returns:
             state: Updated agent positions and velocities.
-            timestep: Transition timestep with individual agent loacl observations.
+            timestep: Transition timestep with individual agent local observations.
         """
         predators = update_state(
             state.key, self.predator_params, state.predators, action.predators
@@ -487,7 +486,7 @@ class PredatorPrey(Environment):
 
         Arrays of individual agent actions. Each agents action is
         an array representing [rotation, acceleration] in the range
-        [0, 1].
+        [-1, 1].
 
         Returns:
             action_spec: Predator-prey action spec
@@ -540,8 +539,7 @@ class PredatorPrey(Environment):
         )
 
     def render(self, state: State) -> None:
-        """
-        Render frames of the environment for a given state using matplotlib.
+        """Render a frame of the environment for a given state using matplotlib.
 
         Args:
             state: State object containing the current dynamics of the environment.
@@ -549,4 +547,5 @@ class PredatorPrey(Environment):
         self._viewer.render(state)
 
     def close(self) -> None:
-        pass
+        """Perform any necessary cleanup."""
+        self._viewer.close()

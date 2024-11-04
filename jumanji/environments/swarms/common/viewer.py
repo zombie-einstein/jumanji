@@ -23,8 +23,7 @@ from .types import AgentState
 
 
 def draw_agents(ax: Axes, agent_states: AgentState, color: str) -> Quiver:
-    """
-    Draw a flock/swarm of agent using a matplotlib quiver
+    """Draw a flock/swarm of agent using a matplotlib quiver
 
     Args:
         ax: Plot axes.
@@ -47,8 +46,7 @@ def draw_agents(ax: Axes, agent_states: AgentState, color: str) -> Quiver:
 
 
 def format_plot(fig: Figure, ax: Axes, border: float = 0.01) -> Tuple[Figure, Axes]:
-    """
-    Format a flock/swarm plot, remove ticks and bound to the unit interval.
+    """Format a flock/swarm plot, remove ticks and bound to the unit interval
 
     Args:
         fig: Matplotlib figure.

@@ -29,6 +29,7 @@ class State:
     predators: Predator agent states.
     prey: Prey agent states.
     key: JAX random key.
+    step: Environment step number
     """
 
     predators: AgentState

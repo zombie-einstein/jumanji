@@ -117,8 +117,8 @@ def update_state(
         actions: Agent actions, i.e. a 2D array of action for each agent.
 
     Returns:
-        AgentState: Updated state of the agents after applying actions
-            and updating positions.
+        AgentState: Updated state of the agents after applying steering
+            actions and updating positions.
     """
     actions = jax.numpy.clip(actions, min=-1.0, max=1.0)
     headings, speeds = update_velocity(key, params, (actions, state))
@@ -145,9 +145,9 @@ def view(
 
     Simple view model where the agents view angle is subdivided
     into an array of values representing the distance from
-    the agent along a rays from the agent, covering the agents
-    view angle. The limit of vision is set at 1.0, which is
-    also the default value is no object is within range.
+    the agent along a rays from the agent, with rays evenly distributed.
+    across the agents field of view. The limit of vision is set at 1.0,
+    which is also the default value if no object is within range.
     Currently, this model assumes the viewed objects are circular.
 
     Args:
@@ -155,7 +155,7 @@ def view(
         params: Tuple containing agent view angle and view-radius.
         a: Viewing agent state.
         b: State of agent being viewed.
-        n_view: Static number of view subdivisions (i.e. how
+        n_view: Static number of view rays/subdivisions (i.e. how
             many cells the resulting array contains).
         i_range: Static agent view/interaction range.
 

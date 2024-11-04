@@ -26,12 +26,11 @@ def sparse_prey_rewards(
     _prey: Optional[types.AgentState],
     _predator: Optional[types.AgentState],
 ) -> float:
-    """
-    Penalise a prey agent if contacted by a predator agent
+    """Penalise a prey agent if contacted by a predator agent.
 
-    Apply a negative penalty to prey agents that are
-    "touched" by a prey agent. This function is
-    applied using an Esquilax spatial interaction.
+    Apply a negative penalty to prey agents that collide
+    with a prey agent. This function is applied using an
+    Esquilax spatial interaction.
 
     Args:
         _k: Dummy JAX random key.
@@ -53,12 +52,13 @@ def distance_prey_rewards(
     *,
     i_range: float,
 ) -> Union[float, chex.Array]:
-    """
-    Penalise a prey agent based on distance from a predator agent
+    """Penalise a prey agent based on distance from a predator agent.
 
     Apply a negative penalty based on a distance between
     agents. The penalty is a linear function of distance,
-    0 at max distance up to `-penalty` at 0 distance.
+    0 at max distance up to `-penalty` at 0 distance. This function
+    can be used with an Esquilax spatial interaction to accumulate
+    rewards between agents.
 
     Args:
         _k: Dummy JAX random key.
@@ -80,8 +80,7 @@ def sparse_predator_rewards(
     _predator: Optional[types.AgentState],
     _prey: Optional[types.AgentState],
 ) -> float:
-    """
-    Reward a predator agent if it within range of a prey agent
+    """Reward a predator agent if it is within range of a prey agent
 
     Apply a fixed positive reward if a predator agent is within
     a fixed range of a prey-agent. This function can
@@ -108,13 +107,12 @@ def distance_predator_rewards(
     *,
     i_range: float,
 ) -> Union[float, chex.Array]:
-    """
-    Reward a predator agent based on distance from a prey agent.
+    """Reward a predator agent based on distance from a prey agent.
 
     Apply a positive reward based on the linear distance between
     a predator and prey agent. Rewards are zero at the max
     interaction distance, and maximal at 0 range. This function
-    can be used with an Esquilax spatial interaction to apply
+    can be used with an Esquilax spatial interaction to accumulate
     rewards between agents.
 
     Args:
