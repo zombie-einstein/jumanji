@@ -42,7 +42,7 @@ Rewards can be either sparse or proximity-based.
 - `predators`: jax array (float) of shape `(num_predators,)`, predators are rewarded a fixed amount
   for coming into contact with a prey agent. If they are in contact with multiple prey, only the
   nearest agent is selected.
-- `prey`: jax array (float) of shape `(num_predators,)`, prey are penalised a fix negative amount if 
+- `prey`: jax array (float) of shape `(num_predators,)`, prey are penalised a fix negative amount if
   they come into contact with a predator agent.
 
 ### Proximity
