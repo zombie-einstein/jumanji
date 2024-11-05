@@ -436,9 +436,10 @@ class PredatorPrey(Environment):
 
     @cached_property
     def reward_spec(self) -> specs.Spec[Rewards]:  # type: ignore[override]
-        """Returns the reward spec
+        """Returns the reward spec.
 
-        Individual rewards for predator and prey types.
+        Arrays of individual rewards for both predator and
+        prey types.
 
         Returns:
             reward_spec: Predator-prey reward spec
