@@ -78,7 +78,7 @@ class SearchAndRescue(Environment):
     (individually) for coming within a fixed range of a target that has
     not already been detected. Agents visualise their local environment
     (i.e. the location of other agents) via a simple segmented view model.
-    The environment consists of an a uniform space with wrapped boundaries.
+    The environment consists of a uniform space with wrapped boundaries.
 
     - observation: `Observation`
         searcher_views: jax array (float) of shape (num_searchers, num_vision)
