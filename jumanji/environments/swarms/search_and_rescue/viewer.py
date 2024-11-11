@@ -17,8 +17,9 @@ from typing import Any, Optional, Sequence, Tuple
 import jax.numpy as jnp
 import matplotlib.animation
 import matplotlib.pyplot as plt
-from matplotlib.layout_engine import TightLayoutEngine
 import numpy as np
+from matplotlib.layout_engine import TightLayoutEngine
+
 import jumanji
 import jumanji.environments
 from jumanji.environments.swarms.common.viewer import draw_agents, format_plot
@@ -120,7 +121,9 @@ class SearchAndRescueViewer(Viewer):
         ax.clear()
         draw_agents(ax, state.searchers, self.searcher_color)
         target_colors = self.target_colors[state.targets.found.astype(jnp.int32)]
-        ax.scatter(state.targets.pos[:, 0], state.targets.pos[:, 1], marker="o", color=target_colors)
+        ax.scatter(
+            state.targets.pos[:, 0], state.targets.pos[:, 1], marker="o", color=target_colors
+        )
 
     def _get_fig_ax(self) -> Tuple[plt.Figure, plt.Axes]:
         exists = plt.fignum_exists(self._figure_name)

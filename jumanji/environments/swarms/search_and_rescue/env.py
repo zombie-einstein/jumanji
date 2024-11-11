@@ -117,7 +117,7 @@ class SearchAndRescue(Environment):
 
     ```python
     from jumanji.environments import SearchAndRescue
-    env = PredatorPrey(
+    env = SearchAndRescue(
         num_searchers=10,
         num_targets=20,
         searcher_vision_range=0.1,
@@ -190,7 +190,7 @@ class SearchAndRescue(Environment):
                 The view cone of an agent goes from +- of the view angle
                 relative to its heading.
             max_steps: Maximum number of environment steps allowed for search.
-            viewer: `Viewer` used for rendering. Defaults to `PredatorPreyViewer`.
+            viewer: `Viewer` used for rendering. Defaults to `SearchAndRescueViewer`.
                 target_dynamics:
             target_dynamics: Target object dynamics model, implemented as a
                 `TargetDynamics` interface. Defaults to `RandomWalk`.
