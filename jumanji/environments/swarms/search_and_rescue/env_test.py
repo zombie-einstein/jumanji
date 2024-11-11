@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from typing import Tuple
+from typing import List, Tuple
 
 import chex
 import jax
@@ -23,14 +23,13 @@ import pytest
 
 from jumanji.environments.swarms.common.types import AgentState
 from jumanji.environments.swarms.search_and_rescue import SearchAndRescue
+from jumanji.environments.swarms.search_and_rescue.dynamics import RandomWalk
 from jumanji.environments.swarms.search_and_rescue.types import (
     Observation,
     State,
     TargetState,
 )
-from jumanji.testing.env_not_smoke import (
-    check_env_does_not_smoke,
-)
+from jumanji.testing.env_not_smoke import check_env_does_not_smoke, check_env_specs_does_not_smoke
 from jumanji.types import StepType, TimeStep
 
 SEARCHER_VISION_RANGE = 0.2
@@ -135,102 +134,114 @@ def test_env_does_not_smoke(env: SearchAndRescue) -> None:
     check_env_does_not_smoke(env, select_action=select_action)
 
 
-# def test_env_specs_do_not_smoke(env: SearchAndRescue) -> None:
-#     """Test that we can access specs without any errors."""
-#     check_env_specs_does_not_smoke(env)
-#
-#
-# @pytest.mark.parametrize(
-#     "predator_pos, predator_heading, predator_view, prey_pos, prey_heading, prey_view",
-#     [
-#         # Both out of view range
-#         ([[0.8, 0.5]], [jnp.pi], [(0, 0, 1.0)], [[0.2, 0.5]], [0.0], [(0, 0, 1.0)]),
-#         # In predator range but not prey
-#         ([[0.35, 0.5]], [jnp.pi], [(0, 5, 0.75)], [[0.2, 0.5]], [0.0], [(0, 0, 1.0)]),
-#         # Both view each other
-#         ([[0.25, 0.5]], [jnp.pi], [(0, 5, 0.25)], [[0.2, 0.5]], [0.0], [(0, 5, 0.5)]),
-#         # Prey facing wrong direction
-#         (
-#             [[0.25, 0.5]],
-#             [jnp.pi],
-#             [(0, 5, 0.25)],
-#             [[0.2, 0.5]],
-#             [jnp.pi],
-#             [(0, 0, 1.0)],
-#         ),
-#         # Prey sees closest predator
-#         (
-#             [[0.35, 0.5], [0.25, 0.5]],
-#             [jnp.pi, jnp.pi],
-#             [(0, 5, 0.75), (0, 16, 0.5), (1, 5, 0.25)],
-#             [[0.2, 0.5]],
-#             [0.0],
-#             [(0, 5, 0.5)],
-#         ),
-#         # Observed around wrapped edge
-#         (
-#             [[0.025, 0.5]],
-#             [jnp.pi],
-#             [(0, 5, 0.25)],
-#             [[0.975, 0.5]],
-#             [0.0],
-#             [(0, 5, 0.5)],
-#         ),
-#     ],
-# )
-# def test_view_observations(
-#     env: PredatorPrey,
-#     predator_pos: List[List[float]],
-#     predator_heading: List[float],
-#     predator_view: List[Tuple[int, int, float]],
-#     prey_pos: List[List[float]],
-#     prey_heading: List[float],
-#     prey_view: List[Tuple[int, int, float]],
-# ) -> None:
-#     """
-#     Test view model generates expected array with different
-#     configurations of agents.
-#     """
-#
-#     predator_pos = jnp.array(predator_pos)
-#     predator_heading = jnp.array(predator_heading)
-#     predator_speed = jnp.zeros(predator_heading.shape)
-#
-#     prey_pos = jnp.array(prey_pos)
-#     prey_heading = jnp.array(prey_heading)
-#     prey_speed = jnp.zeros(prey_heading.shape)
-#
-#     state = State(
-#         predators=AgentState(pos=predator_pos, heading=predator_heading, speed=predator_speed),
-#         prey=AgentState(pos=prey_pos, heading=prey_heading, speed=prey_speed),
-#         key=jax.random.PRNGKey(101),
-#     )
-#
-#     obs = env._state_to_observation(state)
-#
-#     assert isinstance(obs, Observation)
-#
-#     predator_expected = jnp.ones(
-#         (
-#             predator_heading.shape[0],
-#             2 * env.num_vision,
-#         )
-#     )
-#     for i, idx, val in predator_view:
-#         predator_expected = predator_expected.at[i, idx].set(val)
-#
-#     assert jnp.all(jnp.isclose(obs.predators, predator_expected))
-#
-#     prey_expected = jnp.ones(
-#         (
-#             prey_heading.shape[0],
-#             2 * env.num_vision,
-#         )
-#     )
-#     for i, idx, val in prey_view:
-#         prey_expected = prey_expected.at[i, idx].set(val)
-#
-#     assert jnp.all(jnp.isclose(obs.prey[0], prey_expected))
+def test_env_specs_do_not_smoke(env: SearchAndRescue) -> None:
+    """Test that we can access specs without any errors."""
+    check_env_specs_does_not_smoke(env)
+
+
+@pytest.mark.parametrize(
+    "searcher_positions, searcher_headings, view_updates",
+    [
+        # Both out of view range
+        ([[0.8, 0.5], [0.2, 0.5]], [jnp.pi, 0.0], []),
+        # Both view each other
+        ([[0.25, 0.5], [0.2, 0.5]], [jnp.pi, 0.0], [(0, 5, 0.25), (1, 5, 0.25)]),
+        # One facing wrong direction
+        (
+            [[0.25, 0.5], [0.2, 0.5]],
+            [jnp.pi, jnp.pi],
+            [(0, 5, 0.25)],
+        ),
+        # Only see closest neighbour
+        (
+            [[0.35, 0.5], [0.25, 0.5], [0.2, 0.5]],
+            [jnp.pi, 0.0, 0.0],
+            [(0, 5, 0.5), (1, 5, 0.5), (2, 5, 0.25)],
+        ),
+        # Observed around wrapped edge
+        (
+            [[0.025, 0.5], [0.975, 0.5]],
+            [jnp.pi, 0.0],
+            [(0, 5, 0.25), (1, 5, 0.25)],
+        ),
+    ],
+)
+def test_searcher_view(
+    env: SearchAndRescue,
+    searcher_positions: List[List[float]],
+    searcher_headings: List[float],
+    view_updates: List[Tuple[int, int, float]],
+) -> None:
+    """
+    Test view model generates expected array with different
+    configurations of agents.
+    """
+
+    searcher_positions = jnp.array(searcher_positions)
+    searcher_headings = jnp.array(searcher_headings)
+    searcher_speed = jnp.zeros(searcher_headings.shape)
+
+    state = State(
+        searchers=AgentState(
+            pos=searcher_positions, heading=searcher_headings, speed=searcher_speed
+        ),
+        targets=TargetState(pos=jnp.zeros((1, 2)), found=jnp.zeros((1, 2), dtype=bool)),
+        key=jax.random.PRNGKey(101),
+    )
+
+    obs = env._state_to_observation(state)
+
+    assert isinstance(obs, Observation)
+
+    expected = jnp.ones((searcher_headings.shape[0], env.num_vision))
+
+    for i, idx, val in view_updates:
+        expected = expected.at[i, idx].set(val)
+
+    assert jnp.all(jnp.isclose(obs.searcher_views, expected))
+
+
+def test_target_detection(env: SearchAndRescue) -> None:
+    # Keep targets in one location
+    env._target_dynamics = RandomWalk(step_size=0.0)
+
+    # Agent facing wrong direction should not see target
+    state = State(
+        searchers=AgentState(
+            pos=jnp.array([[0.5, 0.5]]), heading=jnp.array([jnp.pi]), speed=jnp.array([0.0])
+        ),
+        targets=TargetState(pos=jnp.array([[0.54, 0.5]]), found=jnp.array([False])),
+        key=jax.random.PRNGKey(101),
+    )
+    state, timestep = env.step(state, jnp.zeros((1, 2)))
+    assert not state.targets.found[0]
+    assert timestep.reward[0] == 0
+
+    # Rotated agent should detect target
+    state = State(
+        searchers=AgentState(
+            pos=state.searchers.pos, heading=jnp.array([0.0]), speed=state.searchers.speed
+        ),
+        targets=state.targets,
+        key=state.key,
+    )
+    state, timestep = env.step(state, jnp.zeros((1, 2)))
+    assert state.targets.found[0]
+    assert timestep.reward[0] == 1
+
+    # Once detected should remain detected
+    state = State(
+        searchers=AgentState(
+            pos=jnp.array([[0.0, 0.0]]),
+            heading=state.searchers.heading,
+            speed=state.searchers.speed,
+        ),
+        targets=state.targets,
+        key=state.key,
+    )
+    state, timestep = env.step(state, jnp.zeros((1, 2)))
+    assert state.targets.found[0]
+    assert timestep.reward[0] == 0
 
 
 def test_search_and_rescue_render(monkeypatch: pytest.MonkeyPatch, env: SearchAndRescue) -> None:
