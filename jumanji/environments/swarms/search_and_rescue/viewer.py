@@ -18,7 +18,7 @@ import jax.numpy as jnp
 import matplotlib.animation
 import matplotlib.pyplot as plt
 from matplotlib.layout_engine import TightLayoutEngine
-
+import numpy as np
 import jumanji
 import jumanji.environments
 from jumanji.environments.swarms.common.viewer import draw_agents, format_plot
@@ -44,8 +44,7 @@ class SearchAndRescueViewer(Viewer):
         self._figure_name = figure_name
         self._figure_size = figure_size
         self.searcher_color = searcher_color
-        self.target_found_color = target_found_color
-        self.target_lost_color = target_lost_color
+        self.target_colors = np.array([target_lost_color, target_found_color])
         self._animation: Optional[matplotlib.animation.Animation] = None
 
     def render(self, state: State) -> None:
@@ -90,7 +89,9 @@ class SearchAndRescueViewer(Viewer):
             searcher_quiver.set_UVC(
                 jnp.cos(state.searchers.heading), jnp.sin(state.searchers.heading)
             )
+            target_colors = self.target_colors[state.targets.found.astype(jnp.int32)]
             target_scatter.set_offsets(state.targets.pos)
+            target_scatter.set_color(target_colors)
             return ((searcher_quiver, target_scatter),)
 
         matplotlib.rc("animation", html="jshtml")
@@ -118,7 +119,8 @@ class SearchAndRescueViewer(Viewer):
     def _draw(self, ax: plt.Axes, state: State) -> None:
         ax.clear()
         draw_agents(ax, state.searchers, self.searcher_color)
-        ax.scatter(state.targets.pos[:, 0], state.targets.pos[:, 1], marker="o")
+        target_colors = self.target_colors[state.targets.found.astype(jnp.int32)]
+        ax.scatter(state.targets.pos[:, 0], state.targets.pos[:, 1], marker="o", color=target_colors)
 
     def _get_fig_ax(self) -> Tuple[plt.Figure, plt.Axes]:
         exists = plt.fignum_exists(self._figure_name)
