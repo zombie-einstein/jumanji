@@ -83,7 +83,7 @@ class SearchAndRescue(Environment):
     - observation: `Observation`
         searcher_views: jax array (float) of shape (num_searchers, num_vision)
             individual local views of positions of other searching agents.
-        target_remaining: (float) Number of targets remaining to be found from
+        targets_remaining: (float) Number of targets remaining to be found from
             the total scaled to the range [0, 1] (i.e. a value of 1.0 indicates
             all the targets are still to be found).
         time_remaining: (float) Steps remaining to find agents, scaled to the
@@ -328,7 +328,7 @@ class SearchAndRescue(Environment):
 
         return Observation(
             searcher_views=searcher_views,
-            target_remaining=1.0 - jnp.sum(state.targets.found) / self.num_targets,
+            targets_remaining=1.0 - jnp.sum(state.targets.found) / self.num_targets,
             time_remaining=1.0 - state.step / (self.max_steps + 1),
         )
 
@@ -354,8 +354,8 @@ class SearchAndRescue(Environment):
             Observation,
             "ObservationSpec",
             searcher_views=searcher_views,
-            target_remaining=specs.BoundedArray(
-                shape=(), minimum=0.0, maximum=1.0, name="target_remaining", dtype=float
+            targets_remaining=specs.BoundedArray(
+                shape=(), minimum=0.0, maximum=1.0, name="targets_remaining", dtype=float
             ),
             time_remaining=specs.BoundedArray(
                 shape=(), minimum=0.0, maximum=1.0, name="time_remaining", dtype=float
