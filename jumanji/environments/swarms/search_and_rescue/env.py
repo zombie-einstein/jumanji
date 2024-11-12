@@ -262,7 +262,7 @@ class SearchAndRescue(Environment):
         )
         observation = self._state_to_observation(state)
         timestep = jax.lax.cond(
-            state.step >= self.max_steps,
+            state.step >= self.max_steps | jnp.all(targets_found),
             termination,
             transition,
             rewards,
