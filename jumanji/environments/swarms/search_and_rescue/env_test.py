@@ -229,7 +229,12 @@ def test_target_detection(env: SearchAndRescue) -> None:
     assert state.targets.found[0]
     assert timestep.reward[0] == 1
 
-    # Once detected should remain detected
+    # Searcher should only get rewards once
+    state, timestep = env.step(state, jnp.zeros((1, 2)))
+    assert state.targets.found[0]
+    assert timestep.reward[0] == 0
+
+    # Once detected target should remain detected if agent moves away
     state = State(
         searchers=AgentState(
             pos=jnp.array([[0.0, 0.0]]),

@@ -19,55 +19,19 @@ import chex
 import jax
 import jax.numpy as jnp
 from esquilax.transforms import spatial
-from esquilax.utils import shortest_vector
 from matplotlib.animation import FuncAnimation
 
 from jumanji import specs
 from jumanji.env import Environment
-from jumanji.environments.swarms.common.types import AgentParams, AgentState
+from jumanji.environments.swarms.common.types import AgentParams
 from jumanji.environments.swarms.common.updates import update_state, view
+from jumanji.environments.swarms.search_and_rescue import utils
 from jumanji.environments.swarms.search_and_rescue.dynamics import RandomWalk, TargetDynamics
 from jumanji.environments.swarms.search_and_rescue.generator import Generator, RandomGenerator
 from jumanji.environments.swarms.search_and_rescue.types import Observation, State, TargetState
 from jumanji.environments.swarms.search_and_rescue.viewer import SearchAndRescueViewer
 from jumanji.types import TimeStep, restart, termination, transition
 from jumanji.viewer import Viewer
-
-
-def _inner_found_check(
-    _key: chex.PRNGKey,
-    searcher_view_angle: float,
-    target_pos: chex.Array,
-    searcher: AgentState,
-) -> chex.Array:
-    """
-    Return True if searcher can view the target.
-    """
-    dx = shortest_vector(searcher.pos, target_pos)
-    phi = jnp.arctan2(dx[1], dx[0]) % (2 * jnp.pi)
-    dh = shortest_vector(phi, searcher.heading, 2 * jnp.pi)
-    return (dh >= -searcher_view_angle) & (dh <= searcher_view_angle)
-
-
-def _inner_reward_check(
-    _key: chex.PRNGKey,
-    searcher_view_angle: float,
-    searcher: AgentState,
-    target: TargetState,
-) -> chex.Array:
-    """
-    Return +1.0 reward if the target is within the searcher view angle.
-    """
-    dx = shortest_vector(searcher.pos, target.pos)
-    phi = jnp.arctan2(dx[1], dx[0]) % (2 * jnp.pi)
-    dh = shortest_vector(phi, searcher.heading, 2 * jnp.pi)
-    can_see = (dh >= -searcher_view_angle) & (dh <= searcher_view_angle)
-    return jax.lax.cond(
-        # (not target.found) & can_see,
-        can_see,
-        lambda: 1.0,
-        lambda: 0.0,
-    )
 
 
 class SearchAndRescue(Environment):
@@ -264,8 +228,10 @@ class SearchAndRescue(Environment):
         # Ensure target positions are wrapped
         target_pos = self._target_dynamics(target_key, state.targets.pos) % 1.0
         # Grant searchers rewards if in range and not already detected
+        # spatial maps the has_found_target function over all pair of targets and
+        # searchers within range of each other and sums rewards per agent.
         rewards = spatial(
-            _inner_reward_check,
+            utils.has_found_target,
             reduction=jnp.add,
             default=0.0,
             i_range=self.target_contact_range,
@@ -278,8 +244,10 @@ class SearchAndRescue(Environment):
             pos_b=target_pos,
         )
         # Mark targets as found if with contact range and view angle of a searcher
+        # spatial maps the has_been_found function over all pair of targets and
+        # searchers within range of each other
         targets_found = spatial(
-            _inner_found_check,
+            utils.has_been_found,
             reduction=jnp.logical_or,
             default=False,
             i_range=self.target_contact_range,
