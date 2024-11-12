@@ -82,8 +82,6 @@ class SearchAndRescue(Environment):
     ```python
     from jumanji.environments import SearchAndRescue
     env = SearchAndRescue(
-        num_searchers=10,
-        num_targets=20,
         searcher_vision_range=0.1,
         target_contact_range=0.01,
         num_vision=40,
@@ -105,8 +103,6 @@ class SearchAndRescue(Environment):
 
     def __init__(
         self,
-        num_searchers: int,
-        num_targets: int,
         searcher_vision_range: float,
         target_contact_range: float,
         num_vision: int,
@@ -132,8 +128,6 @@ class SearchAndRescue(Environment):
             agent interactions.
 
         Args:
-            num_searchers: Number of searching agents.
-            num_targets: Number of search targets.
             searcher_vision_range: Search agent vision range.
             target_contact_range: Range at which a searcher can 'find' a target.
             num_vision: Number of cells/subdivisions in agent
@@ -158,10 +152,9 @@ class SearchAndRescue(Environment):
                 target_dynamics:
             target_dynamics: Target object dynamics model, implemented as a
                 `TargetDynamics` interface. Defaults to `RandomWalk`.
-            generator: Initial state `Generator` instance. Defaults to `RandomGenerator`.
+            generator: Initial state `Generator` instance. Defaults to `RandomGenerator`
+                with 20 targets and 10 searchers.
         """
-        self.num_searchers = num_searchers
-        self.num_targets = num_targets
         self.searcher_vision_range = searcher_vision_range
         self.target_contact_range = target_contact_range
         self.num_vision = num_vision
@@ -174,24 +167,24 @@ class SearchAndRescue(Environment):
             view_angle=searcher_view_angle,
         )
         self.max_steps = max_steps
-        super().__init__()
         self._viewer = viewer or SearchAndRescueViewer()
         self._target_dynamics = target_dynamics or RandomWalk(0.01)
-        self._generator = generator or RandomGenerator(num_searchers, num_targets)
+        self.generator = generator or RandomGenerator(num_targets=20, num_searchers=10)
+        super().__init__()
 
     def __repr__(self) -> str:
         return "\n".join(
             [
                 "Search & rescue multi-agent environment:",
-                f" - num searchers: {self.num_searchers}",
-                f" - num targets: {self.num_targets}",
+                f" - num searchers: {self.generator.num_searchers}",
+                f" - num targets: {self.generator.num_targets}",
                 f" - search vision range: {self.searcher_vision_range}",
                 f" - target contact range: {self.target_contact_range}",
                 f" - num vision: {self.num_vision}",
                 f" - agent radius: {self.agent_radius}",
                 f" - max steps: {self.max_steps},"
                 f" - target dynamics: {self._target_dynamics.__class__.__name__}",
-                f" - generator: {self._generator.__class__.__name__}",
+                f" - generator: {self.generator.__class__.__name__}",
             ]
         )
 
@@ -205,7 +198,7 @@ class SearchAndRescue(Environment):
             state: Initial environment state.
             timestep: TimeStep with individual search agent views.
         """
-        state = self._generator(key, self.searcher_params)
+        state = self.generator(key, self.searcher_params)
         timestep = restart(observation=self._state_to_observation(state))
         return state, timestep
 
@@ -296,7 +289,7 @@ class SearchAndRescue(Environment):
 
         return Observation(
             searcher_views=searcher_views,
-            targets_remaining=1.0 - jnp.sum(state.targets.found) / self.num_targets,
+            targets_remaining=1.0 - jnp.sum(state.targets.found) / self.generator.num_targets,
             time_remaining=1.0 - state.step / (self.max_steps + 1),
         )
 
@@ -312,7 +305,7 @@ class SearchAndRescue(Environment):
             observation_spec: Search-and-rescue observation spec
         """
         searcher_views = specs.BoundedArray(
-            shape=(self.num_searchers, self.num_vision),
+            shape=(self.generator.num_searchers, self.num_vision),
             minimum=0.0,
             maximum=1.0,
             dtype=float,
@@ -342,7 +335,7 @@ class SearchAndRescue(Environment):
             action_spec: Action array spec
         """
         return specs.BoundedArray(
-            shape=(self.num_searchers, 2),
+            shape=(self.generator.num_searchers, 2),
             minimum=-1.0,
             maximum=1.0,
             dtype=float,
@@ -358,9 +351,9 @@ class SearchAndRescue(Environment):
             reward_spec: Reward array spec.
         """
         return specs.BoundedArray(
-            shape=(self.num_searchers,),
+            shape=(self.generator.num_searchers,),
             minimum=0.0,
-            maximum=float(self.num_targets),
+            maximum=float(self.generator.num_targets),
             dtype=float,
         )
 
