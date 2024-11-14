@@ -48,6 +48,7 @@ def has_been_found(
     dx = shortest_vector(searcher.pos, target_pos)
     phi = jnp.arctan2(dx[1], dx[0]) % (2 * jnp.pi)
     dh = shortest_vector(phi, searcher.heading, 2 * jnp.pi)
+    searcher_view_angle = searcher_view_angle * jnp.pi
     return (dh >= -searcher_view_angle) & (dh <= searcher_view_angle)
 
 
@@ -78,6 +79,7 @@ def has_found_target(
     dx = shortest_vector(searcher.pos, target.pos)
     phi = jnp.arctan2(dx[1], dx[0]) % (2 * jnp.pi)
     dh = shortest_vector(phi, searcher.heading, 2 * jnp.pi)
+    searcher_view_angle = searcher_view_angle * jnp.pi
     can_see = (dh >= -searcher_view_angle) & (dh <= searcher_view_angle)
     return jax.lax.cond(
         ~target.found & can_see,
