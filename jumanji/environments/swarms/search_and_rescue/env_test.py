@@ -197,7 +197,7 @@ def test_searcher_view(
 
     assert isinstance(obs, Observation)
 
-    expected = jnp.ones((searcher_headings.shape[0], env.num_vision))
+    expected = jnp.full((searcher_headings.shape[0], env.num_vision), -1.0)
 
     for i, idx, val in view_updates:
         expected = expected.at[i, idx].set(val)

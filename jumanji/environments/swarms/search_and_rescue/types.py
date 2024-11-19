@@ -59,10 +59,10 @@ class Observation(NamedTuple):
     `num_vision = 5` then the observation array could be
 
     ```
-    [1.0, 1.0, 0.5, 1.0, 1.0]
+    [-1.0, -1.0, 0.5, -1.0, -1.0]
     ```
 
-    where `1.0` indicates there is no agents along that ray,
+    where `-1.0` indicates there is no agents along that ray,
     and `0.5` is the normalised distance to the other agent.
     """
 

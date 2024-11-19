@@ -24,7 +24,7 @@ from matplotlib.animation import FuncAnimation
 from jumanji import specs
 from jumanji.env import Environment
 from jumanji.environments.swarms.common.types import AgentParams
-from jumanji.environments.swarms.common.updates import update_state, view
+from jumanji.environments.swarms.common.updates import update_state, view, view_reduction
 from jumanji.environments.swarms.search_and_rescue import utils
 from jumanji.environments.swarms.search_and_rescue.dynamics import RandomWalk, TargetDynamics
 from jumanji.environments.swarms.search_and_rescue.generator import Generator, RandomGenerator
@@ -47,6 +47,9 @@ class SearchAndRescue(Environment):
     - observation: `Observation`
         searcher_views: jax array (float) of shape (num_searchers, num_vision)
             individual local views of positions of other searching agents.
+            Each entry in the view indicates the distant to the nearest neighbour
+            along a ray from the agent, and is -1.0 if no agent is in range
+            along the ray.
         targets_remaining: (float) Number of targets remaining to be found from
             the total scaled to the range [0, 1] (i.e. a value of 1.0 indicates
             all the targets are still to be found).
@@ -273,8 +276,8 @@ class SearchAndRescue(Environment):
     def _state_to_observation(self, state: State) -> Observation:
         searcher_views = spatial(
             view,
-            reduction=jnp.minimum,
-            default=jnp.ones((self.num_vision,)),
+            reduction=view_reduction,
+            default=-jnp.ones((self.num_vision,)),
             include_self=False,
             i_range=self.searcher_vision_range,
         )(
@@ -306,7 +309,7 @@ class SearchAndRescue(Environment):
         """
         searcher_views = specs.BoundedArray(
             shape=(self.generator.num_searchers, self.num_vision),
-            minimum=0.0,
+            minimum=-1.0,
             maximum=1.0,
             dtype=float,
             name="searcher_views",
