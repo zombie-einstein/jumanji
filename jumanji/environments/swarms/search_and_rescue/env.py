@@ -219,8 +219,10 @@ class SearchAndRescue(Environment):
             state: Updated searcher and target positions and velocities.
             timestep: Transition timestep with individual agent local observations.
         """
-        searchers = update_state(state.key, self.searcher_params, state.searchers, actions)
+        # Note: only one new key is needed for the targets, as all other
+        #  keys are just dummy values required by Esquilax
         key, target_key = jax.random.split(state.key, num=2)
+        searchers = update_state(key, self.searcher_params, state.searchers, actions)
         # Ensure target positions are wrapped
         target_pos = self._target_dynamics(target_key, state.targets.pos) % 1.0
         # Grant searchers rewards if in range and not already detected
@@ -265,7 +267,7 @@ class SearchAndRescue(Environment):
         )
         observation = self._state_to_observation(state)
         timestep = jax.lax.cond(
-            state.step >= self.max_steps | jnp.all(targets_found),
+            jnp.logical_or(state.step >= self.max_steps, jnp.all(targets_found)),
             termination,
             transition,
             rewards,
