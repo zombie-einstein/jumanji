@@ -45,7 +45,7 @@ def _check_target_in_view(
     return (dh >= -searcher_view_angle) & (dh <= searcher_view_angle)
 
 
-def has_been_found(
+def target_has_been_found(
     _key: chex.PRNGKey,
     searcher_view_angle: float,
     target_pos: chex.Array,
@@ -72,7 +72,7 @@ def has_been_found(
     return _check_target_in_view(searcher.pos, target_pos, searcher.heading, searcher_view_angle)
 
 
-def has_found_target(
+def reward_if_found_target(
     _key: chex.PRNGKey,
     searcher_view_angle: float,
     searcher: AgentState,

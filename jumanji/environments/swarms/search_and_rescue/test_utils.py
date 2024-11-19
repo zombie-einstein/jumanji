@@ -21,7 +21,10 @@ import pytest
 from jumanji.environments.swarms.common.types import AgentState
 from jumanji.environments.swarms.search_and_rescue.dynamics import RandomWalk, TargetDynamics
 from jumanji.environments.swarms.search_and_rescue.types import TargetState
-from jumanji.environments.swarms.search_and_rescue.utils import has_been_found, has_found_target
+from jumanji.environments.swarms.search_and_rescue.utils import (
+    reward_if_found_target,
+    target_has_been_found,
+)
 
 
 def test_random_walk_dynamics(key: chex.PRNGKey) -> None:
@@ -68,8 +71,8 @@ def test_target_found(
         speed=0.0,
     )
 
-    found = has_been_found(None, view_angle, target.pos, searcher)
-    reward = has_found_target(None, view_angle, searcher, target)
+    found = target_has_been_found(None, view_angle, target.pos, searcher)
+    reward = reward_if_found_target(None, view_angle, searcher, target)
 
     assert found == expected
 

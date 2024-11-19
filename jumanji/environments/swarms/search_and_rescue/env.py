@@ -229,7 +229,7 @@ class SearchAndRescue(Environment):
         # spatial maps the has_found_target function over all pair of targets and
         # searchers within range of each other and sums rewards per agent.
         rewards = spatial(
-            utils.has_found_target,
+            utils.reward_if_found_target,
             reduction=jnp.add,
             default=0.0,
             i_range=self.target_contact_range,
@@ -245,7 +245,7 @@ class SearchAndRescue(Environment):
         # spatial maps the has_been_found function over all pair of targets and
         # searchers within range of each other
         targets_found = spatial(
-            utils.has_been_found,
+            utils.target_has_been_found,
             reduction=jnp.logical_or,
             default=False,
             i_range=self.target_contact_range,
