@@ -173,9 +173,6 @@ class SearchAndRescue(Environment):
         self._target_dynamics = target_dynamics or RandomWalk(0.01)
         self.generator = generator or RandomGenerator(num_targets=20, num_searchers=10)
         self._viewer = viewer or SearchAndRescueViewer()
-        # Needed to set environment boundaries for plots
-        if isinstance(self._viewer, SearchAndRescueViewer):
-            self._viewer.env_size = (self.generator.env_size, self.generator.env_size)
         super().__init__()
 
     def __repr__(self) -> str:
