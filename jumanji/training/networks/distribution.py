@@ -88,6 +88,8 @@ class CategoricalDistribution(Distribution):
 
 
 class NormalDistribution(Distribution):
+    """Normal distribution (with log standard deviations)."""
+
     def __init__(self, means: chex.Array, log_stds: chex.Array):
         self.means = means
         self.log_stds = log_stds
@@ -113,7 +115,10 @@ class NormalDistribution(Distribution):
         var_a = jnp.exp(self.log_stds) ** 2
         var_b = jnp.exp(other.log_stds) ** 2
         kl = (
-            other.log_stds - self.log_stds - 0.5 + (var_a + (self.means - other.means) ** 2) / var_b
+            other.log_stds
+            - self.log_stds
+            - 0.5
+            + (var_a + (self.means - other.means) ** 2) / (var_b + 1e-8)
         )
         return jnp.sum(kl)
 

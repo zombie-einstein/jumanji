@@ -33,10 +33,25 @@ def make_actor_critic_search_and_rescue(
     search_and_rescue: SearchAndRescue,
     layers: Sequence[int],
 ) -> ActorCriticNetworks:
+    """
+    Initialise networks for the search-and-rescue network.
+
+    Note: This network is intended to accept environment observations
+        with agent views of shape [n-agents, n-view], but then
+        Returns a flattened array of actions for each agent (these
+        are reshaped by the wrapped environment).
+
+    Args:
+        search_and_rescue: `SearchAndRescue` environment.
+        layers: List of hidden layer dimensions.
+
+    Returns:
+        Continuous action space MLP action and critic networks.
+    """
     n_actions = prod(search_and_rescue.action_spec.shape)
     parametric_action_distribution = ContinuousActionSpaceNormalDistribution(n_actions)
-    policy_network = make_network_mlp(critic=False, layers=layers, n_actions=n_actions)
-    value_network = make_network_mlp(critic=True, layers=layers, n_actions=n_actions)
+    policy_network = make_actor_network(layers=layers, n_actions=n_actions)
+    value_network = make_critic_network(layers=layers)
 
     return ActorCriticNetworks(
         policy_network=policy_network,
@@ -45,22 +60,27 @@ def make_actor_critic_search_and_rescue(
     )
 
 
-def make_network_mlp(critic: bool, layers: Sequence[int], n_actions: int) -> FeedForwardNetwork:
+def make_critic_network(layers: Sequence[int]) -> FeedForwardNetwork:
     def network_fn(observation: Observation) -> Union[chex.Array, Tuple[chex.Array, chex.Array]]:
-        views = observation.searcher_views  # (B, A, V)
+        views = observation.searcher_views  # (B, M, V)
         x = views.reshape(views.shape[0], -1)  # (B, N)
+        value = hk.nets.MLP([*layers, 1])(x)  # (B, 1)
+        return jnp.squeeze(value, axis=-1)
 
-        if critic:
-            value = hk.nets.MLP([*layers, 1])(x)  # (B, 1)
-            return jnp.squeeze(value, axis=-1)
+    init, apply = hk.without_apply_rng(hk.transform(network_fn))
+    return FeedForwardNetwork(init=init, apply=apply)
 
-        else:
-            means = hk.nets.MLP([*layers, n_actions])(x)  # (B, A)
-            log_stds = hk.get_parameter(
-                "log_stds", shape=means.shape[1:], init=hk.initializers.Constant(0.1)
-            )  # (A,)
-            log_stds = jnp.broadcast_to(log_stds, means.shape)  # (B, A)
-            return means, log_stds
+
+def make_actor_network(layers: Sequence[int], n_actions: int) -> FeedForwardNetwork:
+    def network_fn(observation: Observation) -> Union[chex.Array, Tuple[chex.Array, chex.Array]]:
+        views = observation.searcher_views  # (B, M, V)
+        x = views.reshape(views.shape[0], -1)  # (B, N)
+        means = hk.nets.MLP([*layers, n_actions])(x)  # (B, A)
+        log_stds = hk.get_parameter(
+            "log_stds", shape=means.shape[1:], init=hk.initializers.Constant(0.1)
+        )  # (A,)
+        log_stds = jnp.broadcast_to(log_stds, means.shape)  # (B, A)
+        return means, log_stds
 
     init, apply = hk.without_apply_rng(hk.transform(network_fn))
     return FeedForwardNetwork(init=init, apply=apply)

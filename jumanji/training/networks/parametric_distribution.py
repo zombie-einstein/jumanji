@@ -180,6 +180,8 @@ class FactorisedActionSpaceParametricDistribution(ParametricDistribution):
 
 
 class ContinuousActionSpaceNormalDistribution(ParametricDistribution):
+    """Normal distribution for continuous action spaces"""
+
     def __init__(self, n_actions: int):
         super().__init__(
             param_size=n_actions,
