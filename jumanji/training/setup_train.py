@@ -41,6 +41,7 @@ from jumanji.environments import (
     PacMan,
     RobotWarehouse,
     RubiksCube,
+    SearchAndRescue,
     SlidingTilePuzzle,
     Snake,
     Sokoban,
@@ -93,6 +94,10 @@ def _make_raw_env(cfg: DictConfig) -> Environment:
     if cfg.env.name in {"lbf", "connector"}:
         # Convert a multi-agent environment to a single-agent environment
         env = MultiToSingleWrapper(env)
+    if cfg.env.name == "search_and_rescue":
+        # Convert multi-agent search and rescue to single-agent, and
+        #  reshape actions into expected
+        env = MultiToSingleWrapper(env, action_shaper=lambda x: x.reshape(env.action_spec.shape))
     return env
 
 
@@ -206,6 +211,11 @@ def _setup_random_policy(cfg: DictConfig, env: Environment) -> RandomPolicy:
     elif cfg.env.name == "lbf":
         assert isinstance(env.unwrapped, LevelBasedForaging)
         random_policy = networks.make_random_policy_lbf()
+    elif cfg.env.name == "search_and_rescue":
+        assert isinstance(env.unwrapped, SearchAndRescue)
+        random_policy = networks.make_random_policy_search_and_rescue(
+            search_and_rescue=env.unwrapped
+        )
     else:
         raise ValueError(f"Environment name not found. Got {cfg.env.name}.")
     return random_policy
@@ -420,6 +430,12 @@ def _setup_actor_critic_neworks(cfg: DictConfig, env: Environment) -> ActorCriti
             transformer_num_heads=cfg.env.network.transformer_num_heads,
             transformer_key_size=cfg.env.network.transformer_key_size,
             transformer_mlp_units=cfg.env.network.transformer_mlp_units,
+        )
+    elif cfg.env.name == "search_and_rescue":
+        assert isinstance(env.unwrapped, SearchAndRescue)
+        actor_critic_networks = networks.make_actor_critic_search_and_rescue(
+            search_and_rescue=env.unwrapped,
+            layers=cfg.env.network.layers,
         )
     else:
         raise ValueError(f"Environment name not found. Got {cfg.env.name}.")

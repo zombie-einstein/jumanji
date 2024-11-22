@@ -106,15 +106,15 @@ class SearchAndRescue(Environment):
 
     def __init__(
         self,
-        searcher_vision_range: float,
-        target_contact_range: float,
-        num_vision: int,
-        agent_radius: float,
-        searcher_max_rotate: float,
-        searcher_max_accelerate: float,
-        searcher_min_speed: float,
-        searcher_max_speed: float,
-        searcher_view_angle: float,
+        searcher_vision_range: float = 0.1,
+        target_contact_range: float = 0.01,
+        num_vision: int = 40,
+        agent_radius: float = 0.01,
+        searcher_max_rotate: float = 0.1,
+        searcher_max_accelerate: float = 0.01,
+        searcher_min_speed: float = 0.01,
+        searcher_max_speed: float = 0.05,
+        searcher_view_angle: float = 0.75,
         max_steps: int = 400,
         viewer: Optional[Viewer[State]] = None,
         target_dynamics: Optional[TargetDynamics] = None,
@@ -171,7 +171,7 @@ class SearchAndRescue(Environment):
         )
         self.max_steps = max_steps
         self._target_dynamics = target_dynamics or RandomWalk(0.01)
-        self.generator = generator or RandomGenerator(num_targets=20, num_searchers=10)
+        self.generator = generator or RandomGenerator(num_targets=50, num_searchers=2)
         self._viewer = viewer or SearchAndRescueViewer()
         # Needed to set environment boundaries for plots
         if isinstance(self._viewer, SearchAndRescueViewer):
@@ -276,6 +276,7 @@ class SearchAndRescue(Environment):
             step=state.step + 1,
         )
         observation = self._state_to_observation(state)
+        observation = jax.lax.stop_gradient(observation)
         timestep = jax.lax.cond(
             jnp.logical_or(state.step >= self.max_steps, jnp.all(targets_found)),
             termination,

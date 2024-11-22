@@ -15,13 +15,17 @@
 """Adapted from Brax."""
 
 import abc
-from typing import Any
+from typing import Any, Tuple
 
 import chex
 import jax.numpy as jnp
 import numpy as np
 
-from jumanji.training.networks.distribution import CategoricalDistribution, Distribution
+from jumanji.training.networks.distribution import (
+    CategoricalDistribution,
+    Distribution,
+    NormalDistribution,
+)
 from jumanji.training.networks.postprocessor import (
     FactorisedActionSpaceReshapeBijector,
     IdentityBijector,
@@ -173,3 +177,15 @@ class FactorisedActionSpaceParametricDistribution(ParametricDistribution):
 
     def create_dist(self, parameters: chex.Array) -> CategoricalDistribution:
         return CategoricalDistribution(logits=parameters)
+
+
+class ContinuousActionSpaceNormalDistribution(ParametricDistribution):
+    def __init__(self, n_actions: int):
+        super().__init__(
+            param_size=n_actions,
+            postprocessor=IdentityBijector(),
+            event_ndims=1,
+        )
+
+    def create_dist(self, parameters: Tuple[chex.Array, chex.Array]) -> Distribution:
+        return NormalDistribution(means=parameters[0], log_stds=parameters[1])

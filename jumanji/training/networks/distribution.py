@@ -85,3 +85,37 @@ class CategoricalDistribution(Distribution):
         probs = jax.nn.softmax(self.logits)
         log_probs_other = jax.nn.log_softmax(other.logits)
         return jnp.sum(jnp.where(probs == 0, 0.0, probs * (log_probs - log_probs_other)), axis=-1)
+
+
+class NormalDistribution(Distribution):
+    def __init__(self, means: chex.Array, log_stds: chex.Array):
+        self.means = means
+        self.log_stds = log_stds
+        self.num_actions = jnp.shape(means)[-1]
+
+    def mode(self) -> chex.Array:
+        return self.means
+
+    def log_prob(self, x: chex.Array) -> chex.Array:
+        std = jnp.exp(self.log_stds)
+        log_likelihoods = -0.5 * (
+            jnp.square((x - self.means) / (std + 1e-8)) + 2 * self.log_stds + jnp.log(2 * jnp.pi)
+        )
+        return jnp.sum(log_likelihoods)
+
+    def entropy(self) -> chex.Array:
+        entropies = 0.5 * (1 + jnp.log(2 * jnp.pi) + self.log_stds)
+        return jnp.sum(entropies)
+
+    def kl_divergence(  # type: ignore[override]
+        self, other: NormalDistribution
+    ) -> chex.Array:
+        var_a = jnp.exp(self.log_stds) ** 2
+        var_b = jnp.exp(other.log_stds) ** 2
+        kl = (
+            other.log_stds - self.log_stds - 0.5 + (var_a + (self.means - other.means) ** 2) / var_b
+        )
+        return jnp.sum(kl)
+
+    def sample(self, seed: chex.PRNGKey) -> chex.Array:
+        return self.means + jnp.exp(self.log_stds) * jax.random.normal(seed, self.means.shape)
