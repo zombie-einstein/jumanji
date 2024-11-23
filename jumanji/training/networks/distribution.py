@@ -21,6 +21,7 @@ import abc
 import chex
 import jax
 import jax.numpy as jnp
+from distrax import MultivariateNormalDiag
 
 
 class Distribution(abc.ABC):
@@ -91,36 +92,21 @@ class NormalDistribution(Distribution):
     """Normal distribution (with log standard deviations)."""
 
     def __init__(self, means: chex.Array, log_stds: chex.Array):
-        self.means = means
-        self.log_stds = log_stds
-        self.num_actions = jnp.shape(means)[-1]
+        self.dist = MultivariateNormalDiag(loc=means, scale_diag=jnp.exp(log_stds))
 
     def mode(self) -> chex.Array:
-        return self.means
+        return self.dist.mode()
 
     def log_prob(self, x: chex.Array) -> chex.Array:
-        std = jnp.exp(self.log_stds)
-        log_likelihoods = -0.5 * (
-            jnp.square((x - self.means) / (std + 1e-8)) + 2 * self.log_stds + jnp.log(2 * jnp.pi)
-        )
-        return jnp.sum(log_likelihoods)
+        return self.dist.log_prob(x)
 
     def entropy(self) -> chex.Array:
-        entropies = 0.5 * (1 + jnp.log(2 * jnp.pi) + self.log_stds)
-        return jnp.sum(entropies)
+        return self.dist.entropy()
 
     def kl_divergence(  # type: ignore[override]
         self, other: NormalDistribution
     ) -> chex.Array:
-        var_a = jnp.exp(self.log_stds) ** 2
-        var_b = jnp.exp(other.log_stds) ** 2
-        kl = (
-            other.log_stds
-            - self.log_stds
-            - 0.5
-            + (var_a + (self.means - other.means) ** 2) / (var_b + 1e-8)
-        )
-        return jnp.sum(kl)
+        return self.dist.kl_divergence(other)
 
     def sample(self, seed: chex.PRNGKey) -> chex.Array:
-        return self.means + jnp.exp(self.log_stds) * jax.random.normal(seed, self.means.shape)
+        return self.dist.sample(seed=seed)
