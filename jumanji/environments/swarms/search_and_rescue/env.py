@@ -247,7 +247,8 @@ class SearchAndRescue(Environment):
             n_targets=target_pos.shape[0],
         )
 
-        rewards = jnp.sum(targets_found, axis=1)
+        rewards = utils.rewards_from_found_targets(targets_found)
+
         targets_found = jnp.any(targets_found, axis=0)
         # Targets need to remain found if they already have been
         targets_found = jnp.logical_or(targets_found, state.targets.found)

@@ -84,3 +84,24 @@ def searcher_detect_targets(
         searcher.pos, target.pos, searcher.heading, searcher_view_angle, env_size
     )
     return target_found.at[target_idx].set(jnp.logical_and(~target.found, can_see))
+
+
+def rewards_from_found_targets(targets_found: chex.Array) -> chex.Array:
+    """
+    Calculate per agent rewards from detected targets
+
+    Targets detected by multiple agents share rewards. Agents
+    can receive rewards for detecting multiple targets.
+
+    Args:
+        targets_found: array of shape (n-agents, n-targets) of
+            boolean target detection flags.
+
+    Returns:
+        array of shape (n-agents,) contain
+    """
+    rewards = targets_found.astype(float)
+    norms = jnp.sum(rewards, axis=0)[jnp.newaxis]
+    rewards = jnp.where(norms > 0, rewards / norms, rewards)
+    rewards = jnp.sum(rewards, axis=1)
+    return rewards
