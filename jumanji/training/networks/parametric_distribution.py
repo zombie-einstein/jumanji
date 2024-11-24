@@ -27,6 +27,7 @@ from jumanji.training.networks.distribution import (
     NormalDistribution,
 )
 from jumanji.training.networks.postprocessor import (
+    ContinuousIdentityBijector,
     FactorisedActionSpaceReshapeBijector,
     IdentityBijector,
     Postprocessor,
@@ -185,8 +186,8 @@ class ContinuousActionSpaceNormalDistribution(ParametricDistribution):
     def __init__(self, n_actions: int):
         super().__init__(
             param_size=n_actions,
-            postprocessor=IdentityBijector(),
-            event_ndims=1,
+            postprocessor=ContinuousIdentityBijector(),
+            event_ndims=0,
         )
 
     def create_dist(self, parameters: Tuple[chex.Array, chex.Array]) -> Distribution:

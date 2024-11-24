@@ -47,6 +47,19 @@ class IdentityBijector(Postprocessor):
         return jnp.zeros_like(x, x.dtype)
 
 
+class ContinuousIdentityBijector(Postprocessor):
+    """Identity Bijector for continuous distribution."""
+
+    def forward(self, x: chex.Array) -> chex.Array:
+        return x
+
+    def inverse(self, y: chex.Array) -> chex.Array:
+        return y
+
+    def forward_log_det_jacobian(self, x: chex.Array) -> chex.Array:
+        return jnp.zeros(x.shape[:-1])
+
+
 class FactorisedActionSpaceReshapeBijector(Postprocessor):
     """Identity bijector that reshapes (flattens and unflattens) a sequential action."""
 
