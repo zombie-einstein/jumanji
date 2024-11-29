@@ -91,13 +91,9 @@ def setup_logger(cfg: DictConfig) -> Logger:
 
 def _make_raw_env(cfg: DictConfig) -> Environment:
     env = jumanji.make(cfg.env.registered_version)
-    if cfg.env.name in {"lbf", "connector"}:
+    if cfg.env.name in {"lbf", "connector", "search_and_rescue"}:
         # Convert a multi-agent environment to a single-agent environment
         env = MultiToSingleWrapper(env)
-    if cfg.env.name == "search_and_rescue":
-        # Convert multi-agent search and rescue to single-agent, and
-        #  reshape actions into expected
-        env = MultiToSingleWrapper(env, action_shaper=lambda x: x.reshape(env.action_spec.shape))
     return env
 
 

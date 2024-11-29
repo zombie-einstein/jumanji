@@ -61,10 +61,16 @@ def make_actor_critic_search_and_rescue(
 
 
 def make_critic_network(layers: Sequence[int]) -> FeedForwardNetwork:
+    # Shape names:
+    # B: batch size
+    # N: number of agents
+    # O: observation size
+
     def network_fn(observation: Observation) -> Union[chex.Array, Tuple[chex.Array, chex.Array]]:
-        views = observation.searcher_views  # (B, M, V)
-        x = views.reshape(views.shape[0], -1)  # (B, N)
-        value = hk.nets.MLP([*layers, 1])(x)  # (B, 1)
+        views = observation.searcher_views  # (B, N, O)
+        batch_size = views.shape[0]
+        views = views.reshape(batch_size, -1)
+        value = hk.nets.MLP([*layers, 1])(views)  # (B,)
         return jnp.squeeze(value, axis=-1)
 
     init, apply = hk.without_apply_rng(hk.transform(network_fn))
@@ -72,14 +78,26 @@ def make_critic_network(layers: Sequence[int]) -> FeedForwardNetwork:
 
 
 def make_actor_network(layers: Sequence[int], n_actions: int) -> FeedForwardNetwork:
+    # Shape names:
+    # B: batch size
+    # N: number of agents
+    # O: observation size
+    # A: Number of actions
+
     def network_fn(observation: Observation) -> Union[chex.Array, Tuple[chex.Array, chex.Array]]:
-        views = observation.searcher_views  # (B, M, V)
-        x = views.reshape(views.shape[0], -1)  # (B, N)
-        means = hk.nets.MLP([*layers, n_actions])(x)  # (B, A)
+        views = observation.searcher_views  # (B, N, O)
+        batch_size = views.shape[0]
+        n_agents = views.shape[1]
+        views = views.reshape((batch_size, -1))  # (B, N * 0)
+        means = hk.nets.MLP([*layers, n_agents * n_actions])(views)  # (B, N * A)
         log_stds = hk.get_parameter(
-            "log_stds", shape=means.shape[1:], init=hk.initializers.Constant(0.1)
-        )  # (A,)
-        log_stds = jnp.broadcast_to(log_stds, means.shape)  # (B, A)
+            "log_stds", shape=(n_agents * n_actions,), init=hk.initializers.Constant(0.1)
+        )  # (N * A,)
+        log_stds = jnp.broadcast_to(log_stds, (batch_size, n_agents * n_actions))  # (B, N * A)
+
+        means = means.reshape(batch_size, n_agents, n_actions)
+        log_stds = log_stds.reshape(batch_size, n_agents, n_actions)
+
         return means, log_stds
 
     init, apply = hk.without_apply_rng(hk.transform(network_fn))

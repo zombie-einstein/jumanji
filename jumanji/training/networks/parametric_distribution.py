@@ -187,7 +187,7 @@ class ContinuousActionSpaceNormalDistribution(ParametricDistribution):
         super().__init__(
             param_size=n_actions,
             postprocessor=ContinuousIdentityBijector(),
-            event_ndims=0,
+            event_ndims=1,
         )
 
     def create_dist(self, parameters: Tuple[chex.Array, chex.Array]) -> Distribution:

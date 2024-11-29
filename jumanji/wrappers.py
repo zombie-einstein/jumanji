@@ -226,7 +226,6 @@ class MultiToSingleWrapper(
     def __init__(
         self,
         env: Environment[State, ActionSpec, Observation],
-        action_shaper: Callable = lambda x: x,
         reward_aggregator: Callable = jnp.sum,
         discount_aggregator: Callable = jnp.max,
     ):
@@ -242,7 +241,6 @@ class MultiToSingleWrapper(
                 scalar value, e.g. max.
         """
         super().__init__(env)
-        self.action_shaper = action_shaper
         self._reward_aggregator = reward_aggregator
         self._discount_aggregator = discount_aggregator
 
@@ -294,8 +292,7 @@ class MultiToSingleWrapper(
             state: State object corresponding to the next state of the environment,
             timestep: TimeStep object corresponding the timestep returned by the environment,
         """
-        actions = self.action_shaper(action)
-        state, timestep = self._env.step(state, actions)
+        state, timestep = self._env.step(state, action)
         timestep = self._aggregate_timestep(timestep)
         return state, timestep
 
