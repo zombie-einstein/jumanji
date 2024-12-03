@@ -21,7 +21,7 @@ import abc
 import chex
 import jax
 import jax.numpy as jnp
-from distrax import MultivariateNormalDiag
+from distrax import Normal
 
 
 class Distribution(abc.ABC):
@@ -92,7 +92,7 @@ class NormalDistribution(Distribution):
     """Normal distribution (with log standard deviations)."""
 
     def __init__(self, means: chex.Array, log_stds: chex.Array):
-        self.dist = MultivariateNormalDiag(loc=means, scale_diag=jnp.exp(log_stds))
+        self.dist = Normal(loc=means, scale=jnp.exp(log_stds))
 
     def mode(self) -> chex.Array:
         return self.dist.mode()

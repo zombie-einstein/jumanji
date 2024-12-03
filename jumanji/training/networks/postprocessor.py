@@ -17,6 +17,7 @@
 import abc
 
 import chex
+import distrax
 import jax.numpy as jnp
 
 
@@ -47,17 +48,21 @@ class IdentityBijector(Postprocessor):
         return jnp.zeros_like(x, x.dtype)
 
 
-class ContinuousIdentityBijector(Postprocessor):
-    """Identity Bijector for continuous distribution."""
+class TanhBijector(Postprocessor):
+    """Tanh Bijector for continuous actions."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._tanh = distrax.Tanh()
 
     def forward(self, x: chex.Array) -> chex.Array:
-        return x
+        return self._tanh.forward(x)
 
     def inverse(self, y: chex.Array) -> chex.Array:
-        return y
+        return self._tanh.inverse(y)
 
     def forward_log_det_jacobian(self, x: chex.Array) -> chex.Array:
-        return jnp.zeros(x.shape[:-1])
+        return self._tanh.forward_log_det_jacobian(x)
 
 
 class FactorisedActionSpaceReshapeBijector(Postprocessor):

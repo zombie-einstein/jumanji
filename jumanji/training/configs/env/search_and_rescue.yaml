@@ -5,14 +5,14 @@ network:
     layers: [64, 64]
 
 training:
-    num_epochs: 200
+    num_epochs: 100
     num_learner_steps_per_epoch: 400
     n_steps: 20
     total_batch_size: 128
 
 evaluation:
-    eval_total_batch_size: 1024
-    greedy_eval_total_batch_size: 1024
+    eval_total_batch_size: 2000
+    greedy_eval_total_batch_size: 2000
 
 a2c:
     normalize_advantage: False
