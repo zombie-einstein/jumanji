@@ -107,13 +107,13 @@ class SearchAndRescue(Environment):
     def __init__(
         self,
         searcher_vision_range: float = 0.1,
-        target_contact_range: float = 0.01,
+        target_contact_range: float = 0.02,
         num_vision: int = 40,
-        agent_radius: float = 0.01,
+        agent_radius: float = 0.02,
         searcher_max_rotate: float = 0.1,
         searcher_max_accelerate: float = 0.01,
         searcher_min_speed: float = 0.01,
-        searcher_max_speed: float = 0.05,
+        searcher_max_speed: float = 0.04,
         searcher_view_angle: float = 0.75,
         max_steps: int = 400,
         viewer: Optional[Viewer[State]] = None,
@@ -171,7 +171,7 @@ class SearchAndRescue(Environment):
         )
         self.max_steps = max_steps
         self._target_dynamics = target_dynamics or RandomWalk(0.01)
-        self.generator = generator or RandomGenerator(num_targets=50, num_searchers=2)
+        self.generator = generator or RandomGenerator(num_targets=100, num_searchers=2)
         self._viewer = viewer or SearchAndRescueViewer()
         super().__init__()
 

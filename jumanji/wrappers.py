@@ -233,8 +233,6 @@ class MultiToSingleWrapper(
 
         Args:
             env: `Environment` to wrap to a `dm_env.Environment`.
-            action_shaper: a function that reshapes flattened actions where the
-                environment expects actions shaped for multiple agents.
             reward_aggregator: a function to aggregate all agents rewards into a single scalar
                 value, e.g. sum.
             discount_aggregator: a function to aggregate all agents discounts into a single

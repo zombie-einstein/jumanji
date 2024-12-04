@@ -21,6 +21,9 @@ from jumanji.training.networks.protocols import RandomPolicy
 
 
 class SearchAndRescueRandomPolicy(RandomPolicy):
+    def __init__(self, n_actions: int):
+        self.n_actions = n_actions
+
     def __call__(
         self,
         observation: Observation,
@@ -37,11 +40,12 @@ class SearchAndRescueRandomPolicy(RandomPolicy):
         """
         shape = (
             observation.searcher_views.shape[0],
-            2 * observation.searcher_views.shape[1],
+            observation.searcher_views.shape[1],
+            self.n_actions,
         )
         return jax.random.uniform(key, shape, minval=-1.0, maxval=1.0)
 
 
 def make_random_policy_search_and_rescue(search_and_rescue: SearchAndRescue) -> RandomPolicy:
     """Make random policy for Search & Rescue."""
-    return SearchAndRescueRandomPolicy()
+    return SearchAndRescueRandomPolicy(search_and_rescue.action_spec.shape[-1])
