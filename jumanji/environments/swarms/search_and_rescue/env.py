@@ -28,6 +28,7 @@ from jumanji.environments.swarms.common.updates import update_state, view, view_
 from jumanji.environments.swarms.search_and_rescue import utils
 from jumanji.environments.swarms.search_and_rescue.dynamics import RandomWalk, TargetDynamics
 from jumanji.environments.swarms.search_and_rescue.generator import Generator, RandomGenerator
+from jumanji.environments.swarms.search_and_rescue.reward import RewardFn, SharedRewardFn
 from jumanji.environments.swarms.search_and_rescue.types import Observation, State, TargetState
 from jumanji.environments.swarms.search_and_rescue.viewer import SearchAndRescueViewer
 from jumanji.types import TimeStep, restart, termination, transition
@@ -119,6 +120,7 @@ class SearchAndRescue(Environment):
         viewer: Optional[Viewer[State]] = None,
         target_dynamics: Optional[TargetDynamics] = None,
         generator: Optional[Generator] = None,
+        reward_fn: Optional[RewardFn] = None,
     ) -> None:
         """Instantiates a `SearchAndRescue` environment
 
@@ -157,6 +159,8 @@ class SearchAndRescue(Environment):
                 `TargetDynamics` interface. Defaults to `RandomWalk`.
             generator: Initial state `Generator` instance. Defaults to `RandomGenerator`
                 with 20 targets and 10 searchers.
+            reward_fn: Reward aggregation function. Defaults to `SharedRewardFn` where
+                agents share rewards if they locate a target simultaneously.
         """
         self.searcher_vision_range = searcher_vision_range
         self.target_contact_range = target_contact_range
@@ -173,6 +177,7 @@ class SearchAndRescue(Environment):
         self._target_dynamics = target_dynamics or RandomWalk(0.01)
         self.generator = generator or RandomGenerator(num_targets=100, num_searchers=2)
         self._viewer = viewer or SearchAndRescueViewer()
+        self._reward_fn = reward_fn or SharedRewardFn()
         super().__init__()
 
     def __repr__(self) -> str:
@@ -189,6 +194,7 @@ class SearchAndRescue(Environment):
                 f" - env size: {self.generator.env_size}"
                 f" - target dynamics: {self._target_dynamics.__class__.__name__}",
                 f" - generator: {self.generator.__class__.__name__}",
+                f" - reward fn: {self._reward_fn.__class__.__name__}",
             ]
         )
 
@@ -229,7 +235,7 @@ class SearchAndRescue(Environment):
         # Ensure target positions are wrapped
         target_pos = self._target_dynamics(target_key, state.targets.pos) % self.generator.env_size
         # Searchers return an array of flags of any targets they are in range of,
-        #  and that have not already been locating, result shape here is (n-searcher, n-targets)
+        #  and that have not already been located, result shape here is (n-searcher, n-targets)
         targets_found = spatial(
             utils.searcher_detect_targets,
             reduction=jnp.add,
@@ -247,7 +253,7 @@ class SearchAndRescue(Environment):
             n_targets=target_pos.shape[0],
         )
 
-        rewards = utils.rewards_from_found_targets(targets_found)
+        rewards = self._reward_fn(targets_found)
 
         targets_found = jnp.any(targets_found, axis=0)
         # Targets need to remain found if they already have been
