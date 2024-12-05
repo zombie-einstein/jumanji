@@ -25,7 +25,7 @@ from jumanji.training.networks.actor_critic import (
     FeedForwardNetwork,
 )
 from jumanji.training.networks.parametric_distribution import (
-    ContinuousActionSpaceNormalDistribution,
+    ContinuousActionSpaceNormalTanhDistribution,
 )
 
 
@@ -49,7 +49,7 @@ def make_actor_critic_search_and_rescue(
         Continuous action space MLP action and critic networks.
     """
     n_actions = prod(search_and_rescue.action_spec.shape)
-    parametric_action_distribution = ContinuousActionSpaceNormalDistribution(n_actions)
+    parametric_action_distribution = ContinuousActionSpaceNormalTanhDistribution(n_actions)
     policy_network = make_actor_network(layers=layers, n_actions=n_actions)
     value_network = make_critic_network(layers=layers)
 
@@ -69,7 +69,7 @@ def make_critic_network(layers: Sequence[int]) -> FeedForwardNetwork:
     def network_fn(observation: Observation) -> Union[chex.Array, Tuple[chex.Array, chex.Array]]:
         views = observation.searcher_views  # (B, N, O)
         batch_size = views.shape[0]
-        views = views.reshape(batch_size, -1)
+        views = views.reshape(batch_size, -1)  # (B, N * O)
         value = hk.nets.MLP([*layers, 1])(views)  # (B,)
         return jnp.squeeze(value, axis=-1)
 
@@ -90,13 +90,13 @@ def make_actor_network(layers: Sequence[int], n_actions: int) -> FeedForwardNetw
         n_agents = views.shape[1]
         views = views.reshape((batch_size, -1))  # (B, N * 0)
         means = hk.nets.MLP([*layers, n_agents * n_actions])(views)  # (B, N * A)
+        means = means.reshape(batch_size, n_agents, n_actions)  # (B, N, A)
+
         log_stds = hk.get_parameter(
             "log_stds", shape=(n_agents * n_actions,), init=hk.initializers.Constant(0.1)
         )  # (N * A,)
         log_stds = jnp.broadcast_to(log_stds, (batch_size, n_agents * n_actions))  # (B, N * A)
-
-        means = means.reshape(batch_size, n_agents, n_actions)
-        log_stds = log_stds.reshape(batch_size, n_agents, n_actions)
+        log_stds = log_stds.reshape(batch_size, n_agents, n_actions)  # (B, N, A)
 
         return means, log_stds
 

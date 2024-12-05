@@ -180,7 +180,7 @@ class FactorisedActionSpaceParametricDistribution(ParametricDistribution):
         return CategoricalDistribution(logits=parameters)
 
 
-class ContinuousActionSpaceNormalDistribution(ParametricDistribution):
+class ContinuousActionSpaceNormalTanhDistribution(ParametricDistribution):
     """Normal distribution for continuous action spaces"""
 
     def __init__(self, n_actions: int, threshold: float = 0.999):
@@ -219,8 +219,8 @@ class ContinuousActionSpaceNormalDistribution(ParametricDistribution):
                 raw_log_probs,
             ),
         )
-
-        log_probs = jnp.sum(log_probs, axis=(1, 2))
+        # Sum over non-batch axes
+        log_probs = jnp.sum(log_probs, axis=tuple(range(1, log_probs.ndim)))
 
         return log_probs
 
@@ -229,5 +229,6 @@ class ContinuousActionSpaceNormalDistribution(ParametricDistribution):
         dist = self.create_dist(parameters)
         entropy = dist.entropy()
         entropy += self._postprocessor.forward_log_det_jacobian(dist.sample(seed=seed))
-        entropy = jnp.sum(entropy, axis=(1, 2))
+        # Sum over non-batch axes
+        entropy = jnp.sum(entropy, axis=tuple(range(1, entropy.ndim)))
         return entropy
