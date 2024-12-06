@@ -24,10 +24,14 @@ from matplotlib.animation import FuncAnimation
 from jumanji import specs
 from jumanji.env import Environment
 from jumanji.environments.swarms.common.types import AgentParams
-from jumanji.environments.swarms.common.updates import update_state, view, view_reduction
+from jumanji.environments.swarms.common.updates import update_state
 from jumanji.environments.swarms.search_and_rescue import utils
 from jumanji.environments.swarms.search_and_rescue.dynamics import RandomWalk, TargetDynamics
 from jumanji.environments.swarms.search_and_rescue.generator import Generator, RandomGenerator
+from jumanji.environments.swarms.search_and_rescue.observations import (
+    AgentAndTargetObservationFn,
+    ObservationFn,
+)
 from jumanji.environments.swarms.search_and_rescue.reward import RewardFn, SharedRewardFn
 from jumanji.environments.swarms.search_and_rescue.types import Observation, State, TargetState
 from jumanji.environments.swarms.search_and_rescue.viewer import SearchAndRescueViewer
@@ -109,8 +113,6 @@ class SearchAndRescue(Environment):
         self,
         searcher_vision_range: float = 0.1,
         target_contact_range: float = 0.02,
-        num_vision: int = 40,
-        agent_radius: float = 0.02,
         searcher_max_rotate: float = 0.1,
         searcher_max_accelerate: float = 0.01,
         searcher_min_speed: float = 0.01,
@@ -121,26 +123,13 @@ class SearchAndRescue(Environment):
         target_dynamics: Optional[TargetDynamics] = None,
         generator: Optional[Generator] = None,
         reward_fn: Optional[RewardFn] = None,
+        observation: Optional[ObservationFn] = None,
     ) -> None:
         """Instantiates a `SearchAndRescue` environment
-
-        Note:
-            The environment is square with dimensions
-            `[1.0, 1.0]` so parameters should be scaled
-            appropriately. Also note that performance is
-            dependent on agent vision and interaction ranges,
-            where larger values can lead to large number of
-            agent interactions.
 
         Args:
             searcher_vision_range: Search agent vision range.
             target_contact_range: Range at which a searcher can 'find' a target.
-            num_vision: Number of cells/subdivisions in agent
-                view models. Larger numbers provide a more accurate
-                view, at the cost of the environment, at the cost
-                of performance and memory usage.
-            agent_radius: Radius of individual agents. This
-                effects how large they appear to other agents.
             searcher_max_rotate: Maximum rotation searcher agents can
                 turn within a step. Should be a value from [0,1]
                 representing a fraction of pi radians.
@@ -164,8 +153,7 @@ class SearchAndRescue(Environment):
         """
         self.searcher_vision_range = searcher_vision_range
         self.target_contact_range = target_contact_range
-        self.num_vision = num_vision
-        self.agent_radius = agent_radius
+
         self.searcher_params = AgentParams(
             max_rotate=searcher_max_rotate,
             max_accelerate=searcher_max_accelerate,
@@ -174,10 +162,17 @@ class SearchAndRescue(Environment):
             view_angle=searcher_view_angle,
         )
         self.max_steps = max_steps
-        self._target_dynamics = target_dynamics or RandomWalk(0.01)
+        self._target_dynamics = target_dynamics or RandomWalk(0.0001)
         self.generator = generator or RandomGenerator(num_targets=100, num_searchers=2)
         self._viewer = viewer or SearchAndRescueViewer()
         self._reward_fn = reward_fn or SharedRewardFn()
+        self._observation = observation or AgentAndTargetObservationFn(
+            num_vision=64,
+            vision_range=searcher_vision_range,
+            view_angle=searcher_view_angle,
+            agent_radius=0.02,
+            env_size=self.generator.env_size,
+        )
         super().__init__()
 
     def __repr__(self) -> str:
@@ -188,8 +183,8 @@ class SearchAndRescue(Environment):
                 f" - num targets: {self.generator.num_targets}",
                 f" - search vision range: {self.searcher_vision_range}",
                 f" - target contact range: {self.target_contact_range}",
-                f" - num vision: {self.num_vision}",
-                f" - agent radius: {self.agent_radius}",
+                f" - num vision: {self._observation.num_vision}",
+                f" - agent radius: {self._observation.agent_radius}",
                 f" - max steps: {self.max_steps},"
                 f" - env size: {self.generator.env_size}"
                 f" - target dynamics: {self._target_dynamics.__class__.__name__}",
@@ -277,24 +272,7 @@ class SearchAndRescue(Environment):
         return state, timestep
 
     def _state_to_observation(self, state: State) -> Observation:
-        searcher_views = spatial(
-            view,
-            reduction=view_reduction,
-            default=-jnp.ones((self.num_vision,)),
-            include_self=False,
-            i_range=self.searcher_vision_range,
-            dims=self.generator.env_size,
-        )(
-            state.key,
-            (self.searcher_params.view_angle, self.agent_radius),
-            state.searchers,
-            state.searchers,
-            pos=state.searchers.pos,
-            n_view=self.num_vision,
-            i_range=self.searcher_vision_range,
-            env_size=self.generator.env_size,
-        )
-
+        searcher_views = self._observation(state)
         return Observation(
             searcher_views=searcher_views,
             targets_remaining=1.0 - jnp.sum(state.targets.found) / self.generator.num_targets,
@@ -313,7 +291,7 @@ class SearchAndRescue(Environment):
             observation_spec: Search-and-rescue observation spec
         """
         searcher_views = specs.BoundedArray(
-            shape=(self.generator.num_searchers, self.num_vision),
+            shape=(self.generator.num_searchers, *self._observation.view_shape),
             minimum=-1.0,
             maximum=1.0,
             dtype=float,
