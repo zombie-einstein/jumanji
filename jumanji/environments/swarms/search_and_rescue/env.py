@@ -49,12 +49,16 @@ class SearchAndRescue(Environment):
     (i.e. the location of other agents) via a simple segmented view model.
     The environment consists of a uniform space with wrapped boundaries.
 
+    An episode will terminate if all targets have been located by the team of
+    searching agents.
+
     - observation: `Observation`
-        searcher_views: jax array (float) of shape (num_searchers, num_vision)
-            individual local views of positions of other searching agents.
-            Each entry in the view indicates the distant to the nearest neighbour
-            along a ray from the agent, and is -1.0 if no agent is in range
-            along the ray.
+        searcher_views: jax array (float) of shape (num_searchers, channels, num_vision)
+            Individual local views of positions of other agents and targets, where
+            channels can be used to differentiate between agents and targets.
+            Each entry in the view indicates the distant to another agent/target
+            along a ray from the agent, and is -1.0 if nothing is in range along the ray.
+            The view model can be customised using an `ObservationFn` implementation.
         targets_remaining: (float) Number of targets remaining to be found from
             the total scaled to the range [0, 1] (i.e. a value of 1.0 indicates
             all the targets are still to be found).
@@ -68,9 +72,11 @@ class SearchAndRescue(Environment):
         given parameters.
 
     - reward: jax array (float) of shape (num_searchers,)
-        Arrays of individual agent rewards. Rewards are granted when an agent
+        Arrays of individual agent rewards. A reward of +1 is granted when an agent
         comes into contact range with a target that has not yet been found, and
-        that agent is within the searchers view cone.
+        the target is within the searchers view cone. Rewards can be shared
+        between agents if a target is simultaneously detected by multiple agents,
+        or each can be provided the full reward individually.
 
     - state: `State`
         - searchers: `AgentState`
@@ -86,20 +92,10 @@ class SearchAndRescue(Environment):
         - key: jax array (uint32) of shape (2,)
         - step: int representing the current simulation step.
 
-
     ```python
     from jumanji.environments import SearchAndRescue
-    env = SearchAndRescue(
-        searcher_vision_range=0.1,
-        target_contact_range=0.01,
-        num_vision=40,
-        agent_radius0.01,
-        searcher_max_rotate=0.1,
-        searcher_max_accelerate=0.01,
-        searcher_min_speed=0.01,
-        searcher_max_speed=0.05,
-        searcher_view_angle=0.5,
-    )
+
+    env = SearchAndRescue()
     key = jax.random.PRNGKey(0)
     state, timestep = jax.jit(env.reset)(key)
     env.render(state)
@@ -111,12 +107,11 @@ class SearchAndRescue(Environment):
 
     def __init__(
         self,
-        searcher_vision_range: float = 0.1,
-        target_contact_range: float = 0.02,
-        searcher_max_rotate: float = 0.1,
-        searcher_max_accelerate: float = 0.01,
+        target_contact_range: float = 0.04,
+        searcher_max_rotate: float = 0.25,
+        searcher_max_accelerate: float = 0.005,
         searcher_min_speed: float = 0.01,
-        searcher_max_speed: float = 0.04,
+        searcher_max_speed: float = 0.02,
         searcher_view_angle: float = 0.75,
         max_steps: int = 400,
         viewer: Optional[Viewer[State]] = None,
@@ -128,8 +123,7 @@ class SearchAndRescue(Environment):
         """Instantiates a `SearchAndRescue` environment
 
         Args:
-            searcher_vision_range: Search agent vision range.
-            target_contact_range: Range at which a searcher can 'find' a target.
+            target_contact_range: Range at which a searchers will 'find' a target.
             searcher_max_rotate: Maximum rotation searcher agents can
                 turn within a step. Should be a value from [0,1]
                 representing a fraction of pi radians.
@@ -137,10 +131,11 @@ class SearchAndRescue(Environment):
                 a searcher agent can apply within a step.
             searcher_min_speed: Minimum speed a searcher agent can move at.
             searcher_max_speed: Maximum speed a searcher agent can move at.
-            searcher_view_angle: Predator agent local view angle. Should be
+            searcher_view_angle: Searcher agent local view angle. Should be
                 a value from [0,1] representing a fraction of pi radians.
                 The view cone of an agent goes from +- of the view angle
-                relative to its heading.
+                relative to its heading, e.g. 0.5 would mean searchers have a
+                90° view angle in total.
             max_steps: Maximum number of environment steps allowed for search.
             viewer: `Viewer` used for rendering. Defaults to `SearchAndRescueViewer`.
                 target_dynamics:
@@ -151,7 +146,7 @@ class SearchAndRescue(Environment):
             reward_fn: Reward aggregation function. Defaults to `SharedRewardFn` where
                 agents share rewards if they locate a target simultaneously.
         """
-        self.searcher_vision_range = searcher_vision_range
+        # self.searcher_vision_range = searcher_vision_range
         self.target_contact_range = target_contact_range
 
         self.searcher_params = AgentParams(
@@ -162,15 +157,15 @@ class SearchAndRescue(Environment):
             view_angle=searcher_view_angle,
         )
         self.max_steps = max_steps
-        self._target_dynamics = target_dynamics or RandomWalk(0.0001)
+        self._target_dynamics = target_dynamics or RandomWalk(0.001)
         self.generator = generator or RandomGenerator(num_targets=100, num_searchers=2)
         self._viewer = viewer or SearchAndRescueViewer()
         self._reward_fn = reward_fn or SharedRewardFn()
         self._observation = observation or AgentAndTargetObservationFn(
             num_vision=64,
-            vision_range=searcher_vision_range,
+            vision_range=0.1,
             view_angle=searcher_view_angle,
-            agent_radius=0.02,
+            agent_radius=0.01,
             env_size=self.generator.env_size,
         )
         super().__init__()
@@ -181,7 +176,7 @@ class SearchAndRescue(Environment):
                 "Search & rescue multi-agent environment:",
                 f" - num searchers: {self.generator.num_searchers}",
                 f" - num targets: {self.generator.num_targets}",
-                f" - search vision range: {self.searcher_vision_range}",
+                f" - search vision range: {self._observation.vision_range}",
                 f" - target contact range: {self.target_contact_range}",
                 f" - num vision: {self._observation.num_vision}",
                 f" - agent radius: {self._observation.agent_radius}",
@@ -190,6 +185,7 @@ class SearchAndRescue(Environment):
                 f" - target dynamics: {self._target_dynamics.__class__.__name__}",
                 f" - generator: {self.generator.__class__.__name__}",
                 f" - reward fn: {self._reward_fn.__class__.__name__}",
+                f" - observation fn: {self._observation.__class__.__name__}",
             ]
         )
 
@@ -231,21 +227,22 @@ class SearchAndRescue(Environment):
         target_pos = self._target_dynamics(target_key, state.targets.pos) % self.generator.env_size
         # Searchers return an array of flags of any targets they are in range of,
         #  and that have not already been located, result shape here is (n-searcher, n-targets)
+        n_targets = target_pos.shape[0]
         targets_found = spatial(
             utils.searcher_detect_targets,
-            reduction=jnp.add,
-            default=jnp.zeros((target_pos.shape[0],), dtype=bool),
+            reduction=jnp.logical_or,
+            default=jnp.zeros((n_targets,), dtype=bool),
             i_range=self.target_contact_range,
             dims=self.generator.env_size,
         )(
             key,
             self.searcher_params.view_angle,
             searchers,
-            (jnp.arange(target_pos.shape[0]), state.targets),
+            (jnp.arange(n_targets), state.targets),
             pos=searchers.pos,
             pos_b=target_pos,
             env_size=self.generator.env_size,
-            n_targets=target_pos.shape[0],
+            n_targets=n_targets,
         )
 
         rewards = self._reward_fn(targets_found)
@@ -283,9 +280,8 @@ class SearchAndRescue(Environment):
     def observation_spec(self) -> specs.Spec[Observation]:
         """Returns the observation spec.
 
-        Local searcher agent views representing
-        the distance to the closest neighbouring agents in the
-        environment.
+        Local searcher agent views representing the distance to the
+        closest neighbouring agents and targets in the environment.
 
         Returns:
             observation_spec: Search-and-rescue observation spec

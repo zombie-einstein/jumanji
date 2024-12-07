@@ -137,7 +137,7 @@ def angular_width(
     env_size: float,
 ) -> Tuple[chex.Array, chex.Array, chex.Array]:
     """
-    Get the normalised distance, and left and right angles to an agent.
+    Get the normalised distance, and left and right angles to another agent.
 
     Args:
         viewing_pos: Co-ordinates of the viewing agent

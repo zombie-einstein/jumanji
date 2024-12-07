@@ -22,6 +22,9 @@ from jumanji.environments.swarms.common.types import AgentState
 from jumanji.environments.swarms.search_and_rescue import SearchAndRescue, observations
 from jumanji.environments.swarms.search_and_rescue.types import State, TargetState
 
+VISION_RANGE = 0.2
+VIEW_ANGLE = 0.5
+
 
 @pytest.mark.parametrize(
     "searcher_positions, searcher_headings, env_size, view_updates",
@@ -62,14 +65,14 @@ from jumanji.environments.swarms.search_and_rescue.types import State, TargetSta
 )
 def test_searcher_view(
     key: chex.PRNGKey,
-    env: SearchAndRescue,
+    # env: SearchAndRescue,
     searcher_positions: List[List[float]],
     searcher_headings: List[float],
     env_size: float,
     view_updates: List[Tuple[int, int, float]],
 ) -> None:
     """
-    Test view model generates expected array with different
+    Test agent-only view model generates expected array with different
     configurations of agents.
     """
 
@@ -87,8 +90,8 @@ def test_searcher_view(
 
     observe_fn = observations.AgentObservationFn(
         num_vision=11,
-        vision_range=env.searcher_vision_range,
-        view_angle=env.searcher_params.view_angle,
+        vision_range=VISION_RANGE,
+        view_angle=VIEW_ANGLE,
         agent_radius=0.01,
         env_size=env_size,
     )
@@ -142,15 +145,14 @@ def test_searcher_view(
 )
 def test_search_and_target_view_searchers(
     key: chex.PRNGKey,
-    env: SearchAndRescue,
     searcher_positions: List[List[float]],
     searcher_headings: List[float],
     env_size: float,
     view_updates: List[Tuple[int, int, float]],
 ) -> None:
     """
-    Test view model generates expected array with different
-    configurations of agents.
+    Test agent+target view model generates expected array with different
+    configurations of agents only.
     """
 
     n_agents = len(searcher_headings)
@@ -168,8 +170,8 @@ def test_search_and_target_view_searchers(
 
     observe_fn = observations.AgentAndTargetObservationFn(
         num_vision=11,
-        vision_range=env.searcher_vision_range,
-        view_angle=env.searcher_params.view_angle,
+        vision_range=VISION_RANGE,
+        view_angle=VIEW_ANGLE,
         agent_radius=0.01,
         env_size=env_size,
     )
@@ -225,8 +227,8 @@ def test_search_and_target_view_targets(
     view_updates: List[Tuple[int, float]],
 ) -> None:
     """
-    Test view model generates expected array with different
-    configurations of agents.
+    Test agent+target view model generates expected array with different
+    configurations of targets only.
     """
 
     searcher_position = jnp.array([searcher_position])
@@ -246,8 +248,8 @@ def test_search_and_target_view_targets(
 
     observe_fn = observations.AgentAndTargetObservationFn(
         num_vision=11,
-        vision_range=env.searcher_vision_range,
-        view_angle=env.searcher_params.view_angle,
+        vision_range=VISION_RANGE,
+        view_angle=VIEW_ANGLE,
         agent_radius=0.01,
         env_size=env_size,
     )

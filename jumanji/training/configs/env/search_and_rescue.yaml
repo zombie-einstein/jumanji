@@ -2,10 +2,10 @@ name: search_and_rescue
 registered_version: SearchAndRescue-v0
 
 network:
-    layers: [64, 64]
+    layers: [128, 128]
 
 training:
-    num_epochs: 100
+    num_epochs: 50
     num_learner_steps_per_epoch: 400
     n_steps: 20
     total_batch_size: 128

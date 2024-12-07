@@ -22,7 +22,6 @@ from jumanji.environments.swarms.search_and_rescue import SearchAndRescue
 @pytest.fixture
 def env() -> SearchAndRescue:
     return SearchAndRescue(
-        searcher_vision_range=0.2,
         target_contact_range=0.05,
         searcher_max_rotate=0.2,
         searcher_max_accelerate=0.01,

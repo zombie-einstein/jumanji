@@ -34,6 +34,17 @@ class ObservationFn(abc.ABC):
         agent_radius: float,
         env_size: float,
     ) -> None:
+        """
+        Base class for observation function mapping state to individual agent views.
+
+        Args:
+            view_shape: Individual agent view shape.
+            num_vision: Size of vision array.
+            vision_range: Vision range.
+            view_angle: Agent view angle (as a fraction of pi).
+            agent_radius: Agent/target visual radius.
+            env_size: Environment size.
+        """
         self.view_shape = view_shape
         self.num_vision = num_vision
         self.vision_range = vision_range
@@ -50,7 +61,7 @@ class ObservationFn(abc.ABC):
             state: Current simulation state
 
         Returns:
-            Array of individual agent views
+            Array of individual agent views (n-agents, n-channels, n-vision).
         """
 
 
@@ -63,6 +74,16 @@ class AgentObservationFn(ObservationFn):
         agent_radius: float,
         env_size: float,
     ) -> None:
+        """
+        Observation that only visualises other search agents in proximity.
+
+        Args:
+            num_vision: Size of vision array.
+            vision_range: Vision range.
+            view_angle: Agent view angle (as a fraction of pi).
+            agent_radius: Agent/target visual radius.
+            env_size: Environment size.
+        """
         super().__init__(
             (1, num_vision),
             num_vision,
@@ -73,6 +94,16 @@ class AgentObservationFn(ObservationFn):
         )
 
     def __call__(self, state: State) -> chex.Array:
+        """
+        Generate agent view/observation from state
+
+        Args:
+            state: Current simulation state
+
+        Returns:
+            Array of individual agent views of shape
+            (n-agents, 1, n-vision).
+        """
         searcher_views = spatial(
             view,
             reduction=view_reduction,
@@ -103,6 +134,24 @@ def target_view(
     i_range: float,
     env_size: float,
 ) -> chex.Array:
+    """
+    Return view of a target, dependent on target status.
+
+    This function is intended to be mapped over agents-targets
+    by Esquilax.
+
+    Args:
+        _key: Dummy random key (required by Esquilax).
+        params: View angle and target visual radius.
+        searcher: Searcher agent state
+        target: Target state
+        n_view: Number of value sin view array.
+        i_range: Vision range
+        env_size: Environment size
+
+    Returns:
+        Segmented agent view of target.
+    """
     view_angle, agent_radius = params
     rays = jnp.linspace(
         -view_angle * jnp.pi,
@@ -132,6 +181,19 @@ class AgentAndTargetObservationFn(ObservationFn):
         agent_radius: float,
         env_size: float,
     ) -> None:
+        """
+        Vision model that contains other agents, and found targets.
+
+        Searchers and targets are visualised as individual channels.
+        Targets are only included if they have been located already.
+
+        Args:
+            num_vision: Size of vision array.
+            vision_range: Vision range.
+            view_angle: Agent view angle (as a fraction of pi).
+            agent_radius: Agent/target visual radius.
+            env_size: Environment size.
+        """
         self.vision_range = vision_range
         self.view_angle = view_angle
         self.agent_radius = agent_radius
@@ -146,6 +208,15 @@ class AgentAndTargetObservationFn(ObservationFn):
         )
 
     def __call__(self, state: State) -> chex.Array:
+        """
+        Generate agent view/observation from state
+
+        Args:
+            state: Current simulation state
+
+        Returns:
+            Array of individual agent views
+        """
         searcher_views = spatial(
             view,
             reduction=view_reduction,
