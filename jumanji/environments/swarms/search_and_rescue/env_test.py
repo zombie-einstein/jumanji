@@ -60,6 +60,7 @@ def test_env_init(env: SearchAndRescue, key: chex.PRNGKey) -> None:
         *env._observation.view_shape,
     )
     assert timestep.step_type == StepType.FIRST
+    assert timestep.reward.shape == (env.num_agents,)
 
 
 @pytest.mark.parametrize("env_size", [1.0, 0.2])
@@ -104,6 +105,8 @@ def test_env_step(env: SearchAndRescue, key: chex.PRNGKey, env_size: float) -> N
 
     assert state_history.targets.pos.shape == (n_steps, env.generator.num_targets, 2)
     assert jnp.all((0.0 <= state_history.targets.pos) & (state_history.targets.pos <= env_size))
+
+    assert timesteps.reward.shape == (n_steps, env.num_agents)
 
 
 def test_env_does_not_smoke(env: SearchAndRescue) -> None:

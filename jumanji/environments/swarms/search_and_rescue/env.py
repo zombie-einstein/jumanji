@@ -279,6 +279,14 @@ class SearchAndRescue(Environment):
         )
 
     @cached_property
+    def num_agents(self) -> int:
+        return self.generator.num_searchers
+
+    @cached_property
+    def time_limit(self) -> int:
+        return self.max_steps
+
+    @cached_property
     def observation_spec(self) -> specs.Spec[Observation]:
         """Returns the observation spec.
 
