@@ -154,19 +154,19 @@ register(id="LevelBasedForaging-v0", entry_point="jumanji.environments:LevelBase
 register(
     id="SearchAndRescue-all-visible-v0",
     entry_point="jumanji.environments:SearchAndRescue",
-    kwargs={"observation": search_and_rescue_observations.AgentAndAllTargetObservationFn},
+    kwargs={"observation_fn": search_and_rescue_observations.AgentAndAllTargetObservationFn},
 )
 
 # Search-and-Rescue environment with only found targets visible
 register(
     id="SearchAndRescue-found-targets-visible-v0",
     entry_point="jumanji.environments:SearchAndRescue",
-    kwargs={"observation": search_and_rescue_observations.AgentAndTargetObservationFn},
+    kwargs={"observation_fn": search_and_rescue_observations.AgentAndTargetObservationFn},
 )
 
 # Search-and-Rescue environment with only other searchers visible
 register(
     id="SearchAndRescue-found-agents-visible-v0",
     entry_point="jumanji.environments:SearchAndRescue",
-    kwargs={"observation": search_and_rescue_observations.AgentObservationFn},
+    kwargs={"observation_fn": search_and_rescue_observations.AgentObservationFn},
 )
