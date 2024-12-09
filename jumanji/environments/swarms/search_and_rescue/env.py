@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from functools import cached_property
+from functools import cached_property, partial
 from typing import Optional, Sequence, Tuple
 
 import chex
@@ -200,7 +200,9 @@ class SearchAndRescue(Environment):
             timestep: TimeStep with individual search agent views.
         """
         state = self.generator(key, self.searcher_params)
-        timestep = restart(observation=self._state_to_observation(state))
+        timestep = restart(
+            observation=self._state_to_observation(state), shape=(self.generator.num_searchers,)
+        )
         return state, timestep
 
     def step(self, state: State, actions: chex.Array) -> Tuple[State, TimeStep[Observation]]:
@@ -261,8 +263,8 @@ class SearchAndRescue(Environment):
         observation = jax.lax.stop_gradient(observation)
         timestep = jax.lax.cond(
             jnp.logical_or(state.step >= self.max_steps, jnp.all(targets_found)),
-            termination,
-            transition,
+            partial(termination, shape=(self.generator.num_searchers,)),
+            partial(transition, shape=(self.generator.num_searchers,)),
             rewards,
             observation,
         )
