@@ -29,7 +29,7 @@ from jumanji.environments.swarms.search_and_rescue import utils
 from jumanji.environments.swarms.search_and_rescue.dynamics import RandomWalk, TargetDynamics
 from jumanji.environments.swarms.search_and_rescue.generator import Generator, RandomGenerator
 from jumanji.environments.swarms.search_and_rescue.observations import (
-    AgentAndTargetObservationFn,
+    AgentAndAllTargetObservationFn,
     ObservationFn,
 )
 from jumanji.environments.swarms.search_and_rescue.reward import RewardFn, SharedRewardFn
@@ -161,7 +161,7 @@ class SearchAndRescue(Environment):
         self.generator = generator or RandomGenerator(num_targets=100, num_searchers=2)
         self._viewer = viewer or SearchAndRescueViewer()
         self._reward_fn = reward_fn or SharedRewardFn()
-        self._observation = observation or AgentAndTargetObservationFn(
+        self._observation = observation or AgentAndAllTargetObservationFn(
             num_vision=64,
             vision_range=0.1,
             view_angle=searcher_view_angle,
