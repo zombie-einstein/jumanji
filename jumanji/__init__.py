@@ -20,6 +20,9 @@ from jumanji.env import Environment
 from jumanji.environments.logic.rubiks_cube import generator as rubik_generator
 from jumanji.environments.logic.sudoku import data as sudoku_data
 from jumanji.environments.logic.sudoku import generator as sudoku_generator
+from jumanji.environments.swarms.search_and_rescue import (
+    observations as search_and_rescue_observations,
+)
 from jumanji.registration import make, register, registered_environments
 from jumanji.version import __version__
 
@@ -147,5 +150,23 @@ register(id="LevelBasedForaging-v0", entry_point="jumanji.environments:LevelBase
 # Swarm Environments
 ###
 
-# Search-and-Rescue environment
-register(id="SearchAndRescue-v0", entry_point="jumanji.environments:SearchAndRescue")
+# Search-and-Rescue environment with all agents and targets visible
+register(
+    id="SearchAndRescue-all-visible-v0",
+    entry_point="jumanji.environments:SearchAndRescue",
+    kwargs={"observation": search_and_rescue_observations.AgentAndAllTargetObservationFn},
+)
+
+# Search-and-Rescue environment with only found targets visible
+register(
+    id="SearchAndRescue-found-targets-visible-v0",
+    entry_point="jumanji.environments:SearchAndRescue",
+    kwargs={"observation": search_and_rescue_observations.AgentAndTargetObservationFn},
+)
+
+# Search-and-Rescue environment with only other searchers visible
+register(
+    id="SearchAndRescue-found-agents-visible-v0",
+    entry_point="jumanji.environments:SearchAndRescue",
+    kwargs={"observation": search_and_rescue_observations.AgentObservationFn},
+)

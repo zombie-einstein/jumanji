@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from functools import cached_property, partial
-from typing import Optional, Sequence, Tuple
+from typing import Optional, Sequence, Tuple, Type
 
 import chex
 import jax
@@ -114,11 +114,14 @@ class SearchAndRescue(Environment):
         searcher_max_speed: float = 0.02,
         searcher_view_angle: float = 0.75,
         max_steps: int = 400,
+        num_vision: int = 64,
+        vision_range: float = 0.1,
+        agent_radius: float = 0.01,
         viewer: Optional[Viewer[State]] = None,
         target_dynamics: Optional[TargetDynamics] = None,
         generator: Optional[Generator] = None,
         reward_fn: Optional[RewardFn] = None,
-        observation: Optional[ObservationFn] = None,
+        observation_fn: Optional[Type[ObservationFn]] = None,
     ) -> None:
         """Instantiates a `SearchAndRescue` environment
 
@@ -146,7 +149,6 @@ class SearchAndRescue(Environment):
             reward_fn: Reward aggregation function. Defaults to `SharedRewardFn` where
                 agents share rewards if they locate a target simultaneously.
         """
-        # self.searcher_vision_range = searcher_vision_range
         self.target_contact_range = target_contact_range
 
         self.searcher_params = AgentParams(
@@ -161,11 +163,12 @@ class SearchAndRescue(Environment):
         self.generator = generator or RandomGenerator(num_targets=100, num_searchers=2)
         self._viewer = viewer or SearchAndRescueViewer()
         self._reward_fn = reward_fn or SharedRewardFn()
-        self._observation = observation or AgentAndAllTargetObservationFn(
-            num_vision=64,
-            vision_range=0.1,
+        observation_fn = observation_fn or AgentAndAllTargetObservationFn
+        self._observation = observation_fn(
+            num_vision=num_vision,
+            vision_range=vision_range,
             view_angle=searcher_view_angle,
-            agent_radius=0.01,
+            agent_radius=agent_radius,
             env_size=self.generator.env_size,
         )
         super().__init__()
@@ -297,7 +300,11 @@ class SearchAndRescue(Environment):
             observation_spec: Search-and-rescue observation spec
         """
         searcher_views = specs.BoundedArray(
-            shape=(self.generator.num_searchers, *self._observation.view_shape),
+            shape=(
+                self.generator.num_searchers,
+                self._observation.n_channels,
+                self._observation.num_vision,
+            ),
             minimum=-1.0,
             maximum=1.0,
             dtype=float,
