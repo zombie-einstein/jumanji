@@ -287,7 +287,11 @@ class SearchAndRescue(Environment):
             observation_spec: Search-and-rescue observation spec
         """
         searcher_views = specs.BoundedArray(
-            shape=(self.generator.num_searchers, *self._observation.view_shape),
+            shape=(
+                self.generator.num_searchers,
+                self._observation.num_channels,
+                self._observation.num_vision,
+            ),
             minimum=-1.0,
             maximum=1.0,
             dtype=float,
