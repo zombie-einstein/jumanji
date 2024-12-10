@@ -134,7 +134,9 @@ def test_target_detection(env: SearchAndRescue, key: chex.PRNGKey) -> None:
         searchers=AgentState(
             pos=jnp.array([[0.5, 0.5]]), heading=jnp.array([jnp.pi]), speed=jnp.array([0.0])
         ),
-        targets=TargetState(pos=jnp.array([[0.54, 0.5]]), found=jnp.array([False])),
+        targets=TargetState(
+            pos=jnp.array([[0.54, 0.5]]), vel=jnp.zeros((1, 2)), found=jnp.array([False])
+        ),
         key=key,
     )
     state, timestep = env.step(state, jnp.zeros((1, 2)))
@@ -190,7 +192,9 @@ def test_multi_target_detection(env: SearchAndRescue, key: chex.PRNGKey) -> None
             pos=jnp.array([[0.5, 0.5]]), heading=jnp.array([0.5 * jnp.pi]), speed=jnp.array([0.0])
         ),
         targets=TargetState(
-            pos=jnp.array([[0.54, 0.5], [0.46, 0.5]]), found=jnp.array([False, False])
+            pos=jnp.array([[0.54, 0.5], [0.46, 0.5]]),
+            vel=jnp.zeros((2, 2)),
+            found=jnp.array([False, False]),
         ),
         key=key,
     )

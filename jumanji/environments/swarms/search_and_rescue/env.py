@@ -223,11 +223,12 @@ class SearchAndRescue(Environment):
         searchers = update_state(
             key, self.generator.env_size, self.searcher_params, state.searchers, actions
         )
-        # Ensure target positions are wrapped
-        target_pos = self._target_dynamics(target_key, state.targets.pos) % self.generator.env_size
+
+        targets = self._target_dynamics(target_key, state.targets, self.generator.env_size)
+
         # Searchers return an array of flags of any targets they are in range of,
         #  and that have not already been located, result shape here is (n-searcher, n-targets)
-        n_targets = target_pos.shape[0]
+        n_targets = targets.pos.shape[0]
         targets_found = spatial(
             utils.searcher_detect_targets,
             reduction=jnp.logical_or,
@@ -238,9 +239,9 @@ class SearchAndRescue(Environment):
             key,
             self.searcher_params.view_angle,
             searchers,
-            (jnp.arange(n_targets), state.targets),
+            (jnp.arange(n_targets), targets),
             pos=searchers.pos,
-            pos_b=target_pos,
+            pos_b=targets.pos,
             env_size=self.generator.env_size,
             n_targets=n_targets,
         )
@@ -253,7 +254,7 @@ class SearchAndRescue(Environment):
 
         state = State(
             searchers=searchers,
-            targets=TargetState(pos=target_pos, found=targets_found),
+            targets=TargetState(pos=targets.pos, vel=targets.vel, found=targets_found),
             key=key,
             step=state.step + 1,
         )
