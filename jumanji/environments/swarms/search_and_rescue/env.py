@@ -113,7 +113,7 @@ class SearchAndRescue(Environment):
         searcher_min_speed: float = 0.01,
         searcher_max_speed: float = 0.02,
         searcher_view_angle: float = 0.75,
-        max_steps: int = 400,
+        time_limit: int = 400,
         viewer: Optional[Viewer[State]] = None,
         target_dynamics: Optional[TargetDynamics] = None,
         generator: Optional[Generator] = None,
@@ -136,7 +136,7 @@ class SearchAndRescue(Environment):
                 The view cone of an agent goes from +- of the view angle
                 relative to its heading, e.g. 0.5 would mean searchers have a
                 90° view angle in total.
-            max_steps: Maximum number of environment steps allowed for search.
+            time_limit: Maximum number of environment steps allowed for search.
             viewer: `Viewer` used for rendering. Defaults to `SearchAndRescueViewer`.
                 target_dynamics:
             target_dynamics: Target object dynamics model, implemented as a
@@ -156,7 +156,7 @@ class SearchAndRescue(Environment):
             max_speed=searcher_max_speed,
             view_angle=searcher_view_angle,
         )
-        self.max_steps = max_steps
+        self.time_limit = time_limit
         self._target_dynamics = target_dynamics or RandomWalk(0.001)
         self.generator = generator or RandomGenerator(num_targets=100, num_searchers=2)
         self._viewer = viewer or SearchAndRescueViewer()
@@ -180,7 +180,7 @@ class SearchAndRescue(Environment):
                 f" - target contact range: {self.target_contact_range}",
                 f" - num vision: {self._observation.num_vision}",
                 f" - agent radius: {self._observation.agent_radius}",
-                f" - max steps: {self.max_steps},"
+                f" - time limit: {self.time_limit},"
                 f" - env size: {self.generator.env_size}"
                 f" - target dynamics: {self._target_dynamics.__class__.__name__}",
                 f" - generator: {self.generator.__class__.__name__}",
@@ -260,7 +260,7 @@ class SearchAndRescue(Environment):
         observation = self._state_to_observation(state)
         observation = jax.lax.stop_gradient(observation)
         timestep = jax.lax.cond(
-            jnp.logical_or(state.step >= self.max_steps, jnp.all(targets_found)),
+            jnp.logical_or(state.step >= self.time_limit, jnp.all(targets_found)),
             termination,
             transition,
             rewards,
@@ -273,8 +273,12 @@ class SearchAndRescue(Environment):
         return Observation(
             searcher_views=searcher_views,
             targets_remaining=1.0 - jnp.sum(state.targets.found) / self.generator.num_targets,
-            time_remaining=1.0 - state.step / (self.max_steps + 1),
+            time_remaining=1.0 - state.step / (self.time_limit + 1),
         )
+
+    @cached_property
+    def num_agents(self) -> int:
+        return self.generator.num_searchers
 
     @cached_property
     def observation_spec(self) -> specs.Spec[Observation]:

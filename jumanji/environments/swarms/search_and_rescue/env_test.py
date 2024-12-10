@@ -109,7 +109,7 @@ def test_env_step(env: SearchAndRescue, key: chex.PRNGKey, env_size: float) -> N
 
 def test_env_does_not_smoke(env: SearchAndRescue) -> None:
     """Test that we can run an episode without any errors."""
-    env.max_steps = 10
+    env.time_limit = 10
 
     def select_action(action_key: chex.PRNGKey, _state: Observation) -> chex.Array:
         return jax.random.uniform(
