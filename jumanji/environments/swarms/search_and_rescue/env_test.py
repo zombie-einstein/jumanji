@@ -70,8 +70,9 @@ def test_env_step(env: SearchAndRescue, key: chex.PRNGKey, env_size: float) -> N
     check states (i.e. positions, heading, speeds) all fall
     inside expected ranges.
     """
-    n_steps = 22
+    n_steps = env.time_limit
     env.generator.env_size = env_size
+    env.time_limit = 22
 
     def step(
         carry: Tuple[chex.PRNGKey, State], _: None
