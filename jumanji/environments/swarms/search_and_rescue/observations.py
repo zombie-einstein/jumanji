@@ -25,9 +25,10 @@ from jumanji.environments.swarms.search_and_rescue.types import State, TargetSta
 
 
 class ObservationFn(abc.ABC):
+    num_channels: int
+
     def __init__(
         self,
-        num_channels: int,
         num_vision: int,
         vision_range: float,
         view_angle: float,
@@ -38,14 +39,12 @@ class ObservationFn(abc.ABC):
         Base class for observation function mapping state to individual agent views.
 
         Args:
-            num_channels: Number of channels in agent view.
             num_vision: Size of vision array.
             vision_range: Vision range.
             view_angle: Agent view angle (as a fraction of pi).
             agent_radius: Agent/target visual radius.
             env_size: Environment size.
         """
-        self.num_channels = num_channels
         self.num_vision = num_vision
         self.vision_range = vision_range
         self.view_angle = view_angle
@@ -66,6 +65,8 @@ class ObservationFn(abc.ABC):
 
 
 class AgentObservationFn(ObservationFn):
+    num_channels: int = 1
+
     def __init__(
         self,
         num_vision: int,
@@ -85,7 +86,6 @@ class AgentObservationFn(ObservationFn):
             env_size: Environment size.
         """
         super().__init__(
-            1,
             num_vision,
             vision_range,
             view_angle,
@@ -173,6 +173,8 @@ def found_target_view(
 
 
 class AgentAndTargetObservationFn(ObservationFn):
+    num_channels: int = 2
+
     def __init__(
         self,
         num_vision: int,
@@ -199,7 +201,6 @@ class AgentAndTargetObservationFn(ObservationFn):
         self.agent_radius = agent_radius
         self.env_size = env_size
         super().__init__(
-            2,
             num_vision,
             vision_range,
             view_angle,
@@ -307,6 +308,8 @@ def all_target_view(
 
 
 class AgentAndAllTargetObservationFn(ObservationFn):
+    num_channels: int = 3
+
     def __init__(
         self,
         num_vision: int,
@@ -333,7 +336,6 @@ class AgentAndAllTargetObservationFn(ObservationFn):
         self.agent_radius = agent_radius
         self.env_size = env_size
         super().__init__(
-            3,
             num_vision,
             vision_range,
             view_angle,

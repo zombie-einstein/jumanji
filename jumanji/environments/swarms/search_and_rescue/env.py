@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from functools import cached_property, partial
-from typing import Optional, Sequence, Tuple
+from typing import Optional, Sequence, Tuple, Type
 
 import chex
 import jax
@@ -29,7 +29,7 @@ from jumanji.environments.swarms.search_and_rescue import utils
 from jumanji.environments.swarms.search_and_rescue.dynamics import RandomWalk, TargetDynamics
 from jumanji.environments.swarms.search_and_rescue.generator import Generator, RandomGenerator
 from jumanji.environments.swarms.search_and_rescue.observations import (
-    AgentAndTargetObservationFn,
+    AgentAndAllTargetObservationFn,
     ObservationFn,
 )
 from jumanji.environments.swarms.search_and_rescue.reward import RewardFn, SharedRewardFn
@@ -121,7 +121,7 @@ class SearchAndRescue(Environment):
         target_dynamics: Optional[TargetDynamics] = None,
         generator: Optional[Generator] = None,
         reward_fn: Optional[RewardFn] = None,
-        observation: Optional[ObservationFn] = None,
+        observation_fn: Optional[Type[ObservationFn]] = None,
     ) -> None:
         """Instantiates a `SearchAndRescue` environment
 
@@ -164,7 +164,8 @@ class SearchAndRescue(Environment):
         self.generator = generator or RandomGenerator(num_targets=100, num_searchers=2)
         self._viewer = viewer or SearchAndRescueViewer()
         self._reward_fn = reward_fn or SharedRewardFn()
-        self._observation = observation or AgentAndTargetObservationFn(
+        observation_fn = observation_fn or AgentAndAllTargetObservationFn
+        self._observation = observation_fn(
             num_vision=num_vision,
             vision_range=vision_range,
             view_angle=searcher_view_angle,
