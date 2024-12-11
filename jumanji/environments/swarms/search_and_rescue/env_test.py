@@ -128,6 +128,7 @@ def test_env_specs_do_not_smoke(env: SearchAndRescue) -> None:
 def test_target_detection(env: SearchAndRescue, key: chex.PRNGKey) -> None:
     # Keep targets in one location
     env._target_dynamics = RandomWalk(step_size=0.0)
+    env.generator.num_targets = 1
 
     # Agent facing wrong direction should not see target
     state = State(
@@ -185,6 +186,7 @@ def test_multi_target_detection(env: SearchAndRescue, key: chex.PRNGKey) -> None
         max_speed=0.05,
         view_angle=0.25,
     )
+    env.generator.num_targets = 2
 
     # Agent facing wrong direction should not see target
     state = State(
