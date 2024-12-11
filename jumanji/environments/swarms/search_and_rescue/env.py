@@ -246,7 +246,7 @@ class SearchAndRescue(Environment):
             n_targets=n_targets,
         )
 
-        rewards = self._reward_fn(targets_found)
+        rewards = self._reward_fn(targets_found, state.step, self.time_limit)
 
         targets_found = jnp.any(targets_found, axis=0)
         # Targets need to remain found if they already have been
