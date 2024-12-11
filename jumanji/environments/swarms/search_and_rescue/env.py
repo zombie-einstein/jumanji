@@ -114,6 +114,9 @@ class SearchAndRescue(Environment):
         searcher_max_speed: float = 0.02,
         searcher_view_angle: float = 0.75,
         time_limit: int = 400,
+        num_vision: int = 64,
+        vision_range: float = 0.1,
+        agent_radius: float = 0.01,
         viewer: Optional[Viewer[State]] = None,
         target_dynamics: Optional[TargetDynamics] = None,
         generator: Optional[Generator] = None,
@@ -162,10 +165,10 @@ class SearchAndRescue(Environment):
         self._viewer = viewer or SearchAndRescueViewer()
         self._reward_fn = reward_fn or SharedRewardFn()
         self._observation = observation or AgentAndTargetObservationFn(
-            num_vision=64,
-            vision_range=0.1,
+            num_vision=num_vision,
+            vision_range=vision_range,
             view_angle=searcher_view_angle,
-            agent_radius=0.01,
+            agent_radius=agent_radius,
             env_size=self.generator.env_size,
         )
         super().__init__()
