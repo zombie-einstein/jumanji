@@ -44,10 +44,11 @@ def test_env_init(env: SearchAndRescue, key: chex.PRNGKey) -> None:
     assert isinstance(state.searchers, AgentState)
     assert state.searchers.pos.shape == (env.generator.num_searchers, 2)
     assert state.searchers.speed.shape == (env.generator.num_searchers,)
-    assert state.searchers.speed.shape == (env.generator.num_searchers,)
+    assert state.searchers.heading.shape == (env.generator.num_searchers,)
 
     assert isinstance(state.targets, TargetState)
     assert state.targets.pos.shape == (env.generator.num_targets, 2)
+    assert state.targets.vel.shape == (env.generator.num_targets, 2)
     assert state.targets.found.shape == (env.generator.num_targets,)
     assert jnp.array_equal(
         state.targets.found, jnp.full((env.generator.num_targets,), False, dtype=bool)
@@ -61,9 +62,10 @@ def test_env_init(env: SearchAndRescue, key: chex.PRNGKey) -> None:
         env._observation.num_vision,
     )
     assert timestep.step_type == StepType.FIRST
+    assert timestep.reward.shape == (env.generator.num_searchers,)
 
 
-@pytest.mark.parametrize("env_size", [1.0, 0.2])
+@pytest.mark.parametrize("env_size", [1.0, 0.2, 10.0])
 def test_env_step(env: SearchAndRescue, key: chex.PRNGKey, env_size: float) -> None:
     """
     Run several steps of the environment with random actions and
@@ -79,9 +81,7 @@ def test_env_step(env: SearchAndRescue, key: chex.PRNGKey, env_size: float) -> N
     ) -> Tuple[Tuple[chex.PRNGKey, State], Tuple[State, TimeStep[Observation]]]:
         k, state = carry
         k, k_search = jax.random.split(k)
-        actions = jax.random.uniform(
-            k_search, (env.generator.num_searchers, 2), minval=-1.0, maxval=1.0
-        )
+        actions = jax.random.uniform(k_search, (env.num_agents, 2), minval=-1.0, maxval=1.0)
         new_state, timestep = env.step(state, actions)
         return (k, new_state), (state, timestep)
 
@@ -92,14 +92,14 @@ def test_env_step(env: SearchAndRescue, key: chex.PRNGKey, env_size: float) -> N
 
     assert isinstance(state_history, State)
 
-    assert state_history.searchers.pos.shape == (n_steps, env.generator.num_searchers, 2)
+    assert state_history.searchers.pos.shape == (n_steps, env.num_agents, 2)
     assert jnp.all((0.0 <= state_history.searchers.pos) & (state_history.searchers.pos <= env_size))
-    assert state_history.searchers.speed.shape == (n_steps, env.generator.num_searchers)
+    assert state_history.searchers.speed.shape == (n_steps, env.num_agents)
     assert jnp.all(
         (env.searcher_params.min_speed <= state_history.searchers.speed)
         & (state_history.searchers.speed <= env.searcher_params.max_speed)
     )
-    assert state_history.searchers.speed.shape == (n_steps, env.generator.num_searchers)
+    assert state_history.searchers.speed.shape == (n_steps, env.num_agents)
     assert jnp.all(
         (0.0 <= state_history.searchers.heading) & (state_history.searchers.heading <= 2.0 * jnp.pi)
     )
@@ -107,27 +107,33 @@ def test_env_step(env: SearchAndRescue, key: chex.PRNGKey, env_size: float) -> N
     assert state_history.targets.pos.shape == (n_steps, env.generator.num_targets, 2)
     assert jnp.all((0.0 <= state_history.targets.pos) & (state_history.targets.pos <= env_size))
 
+    assert timesteps.observation.positions.shape == (n_steps, env.num_agents, 2)
+    assert jnp.all(
+        (0.0 <= timesteps.observation.positions) & (timesteps.observation.positions <= 1.0)
+    )
 
-def test_env_does_not_smoke(env: SearchAndRescue) -> None:
+
+def test_env_does_not_smoke(multi_obs_env: SearchAndRescue) -> None:
     """Test that we can run an episode without any errors."""
-    env.time_limit = 10
+    multi_obs_env.time_limit = 10
 
     def select_action(action_key: chex.PRNGKey, _state: Observation) -> chex.Array:
         return jax.random.uniform(
-            action_key, (env.generator.num_searchers, 2), minval=-1.0, maxval=1.0
+            action_key, (multi_obs_env.generator.num_searchers, 2), minval=-1.0, maxval=1.0
         )
 
-    check_env_does_not_smoke(env, select_action=select_action)
+    check_env_does_not_smoke(multi_obs_env, select_action=select_action)
 
 
-def test_env_specs_do_not_smoke(env: SearchAndRescue) -> None:
+def test_env_specs_do_not_smoke(multi_obs_env: SearchAndRescue) -> None:
     """Test that we can access specs without any errors."""
-    check_env_specs_does_not_smoke(env)
+    check_env_specs_does_not_smoke(multi_obs_env)
 
 
 def test_target_detection(env: SearchAndRescue, key: chex.PRNGKey) -> None:
     # Keep targets in one location
     env._target_dynamics = RandomWalk(step_size=0.0)
+    env.generator.num_targets = 1
 
     # Agent facing wrong direction should not see target
     state = State(
@@ -185,6 +191,7 @@ def test_multi_target_detection(env: SearchAndRescue, key: chex.PRNGKey) -> None
         max_speed=0.05,
         view_angle=0.25,
     )
+    env.generator.num_targets = 2
 
     # Agent facing wrong direction should not see target
     state = State(

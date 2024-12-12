@@ -38,6 +38,11 @@ class ObservationFn(abc.ABC):
         """
         Base class for observation function mapping state to individual agent views.
 
+        Maps states to an array of individual local agent views of
+        the environment, with shape (n-agents, n-channels, n-vision).
+        Channels can be used to differentiate between agent types or
+        statuses.
+
         Args:
             num_vision: Size of vision array.
             vision_range: Vision range.
@@ -216,7 +221,9 @@ class AgentAndTargetObservationFn(ObservationFn):
             state: Current simulation state
 
         Returns:
-            Array of individual agent views
+            Array of individual agent views of shape
+            (n-agents, 2, n-vision). Other agents are shown
+            in channel 0, and located targets 1.
         """
         searcher_views = spatial(
             view,
@@ -319,10 +326,10 @@ class AgentAndAllTargetObservationFn(ObservationFn):
         env_size: float,
     ) -> None:
         """
-        Vision model that contains other agents, and found targets.
+        Vision model that contains other agents, and all targets.
 
-        Searchers and targets are visualised as individual channels.
-        Targets are only included if they have been located already.
+        Searchers and targets are visualised as individual channels,
+        with found and unfound targets also shown on different channels.
 
         Args:
             num_vision: Size of vision array.
@@ -351,7 +358,10 @@ class AgentAndAllTargetObservationFn(ObservationFn):
             state: Current simulation state
 
         Returns:
-            Array of individual agent views
+            Array of individual agent views of shape
+            (n-agents, 3, n-vision). Other agents are shown
+            in channel 0, located targets 1, and un-located
+            targets at index 2.
         """
         searcher_views = spatial(
             view,
