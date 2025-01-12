@@ -86,7 +86,7 @@ class SearchAndRescue(Environment):
         - searchers: `AgentState`
             - pos: jax array (float) of shape (num_searchers, 2) in the range [0, env_size].
             - heading: jax array (float) of shape (num_searcher,) in
-                the range [0, 2Π].
+                the range [0, 2π].
             - speed: jax array (float) of shape (num_searchers,) in the
                 range [min_speed, max_speed].
         - targets: `TargetState`
@@ -131,13 +131,13 @@ class SearchAndRescue(Environment):
             target_contact_range: Range at which a searchers will 'find' a target.
             searcher_max_rotate: Maximum rotation searcher agents can
                 turn within a step. Should be a value from [0,1]
-                representing a fraction of Π-radians.
+                representing a fraction of π-radians.
             searcher_max_accelerate: Magnitude of the maximum
                 acceleration/deceleration a searcher agent can apply within a step.
             searcher_min_speed: Minimum speed a searcher agent can move at.
             searcher_max_speed: Maximum speed a searcher agent can move at.
             searcher_view_angle: Searcher agent local view angle. Should be
-                a value from [0,1] representing a fraction of Π-radians.
+                a value from [0,1] representing a fraction of π-radians.
                 The view cone of an agent goes from +- of the view angle
                 relative to its heading, e.g. 0.5 would mean searchers have a
                 90° view angle in total.
