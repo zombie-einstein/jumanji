@@ -66,4 +66,4 @@ class RandomWalk(TargetDynamics):
         d_pos = jax.random.uniform(key, targets.pos.shape)
         d_pos = self.step_size * 2.0 * (d_pos - 0.5)
         pos = (targets.pos + d_pos) % env_size
-        return TargetState(pos=pos, vel=targets.vel, found=targets.found)
+        return targets.replace(pos=pos)  # type: ignore

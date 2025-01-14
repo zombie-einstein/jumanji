@@ -58,8 +58,8 @@ def test_env_init(env: SearchAndRescue, key: chex.PRNGKey) -> None:
     assert isinstance(timestep.observation, Observation)
     assert timestep.observation.searcher_views.shape == (
         env.generator.num_searchers,
-        env._observation.num_channels,
-        env._observation.num_vision,
+        env._observation_fn.num_channels,
+        env._observation_fn.num_vision,
     )
     assert timestep.step_type == StepType.FIRST
     assert timestep.reward.shape == (env.generator.num_searchers,)
