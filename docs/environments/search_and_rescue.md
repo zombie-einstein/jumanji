@@ -22,8 +22,8 @@ space is a uniform square space, wrapped at the boundaries.
 Many aspects of the environment can be customised:
 
 - Agent observations can include targets as well as other searcher agents.
-- Rewards can be shared by agents, or can be treated completely individually for individual
-  agents and can be scaled by time-step.
+- Rewards can be customised, to allow for time dependent rewards, and to distribute
+  rewards between agents that find a target simultaneously in the same step.
 - Target dynamics can be customised to model various search scenarios.
 
 ## Observations
@@ -74,7 +74,18 @@ by the `min_speed` and `max_speed` parameters.
 
 Jax array (float) of `(num_searchers,)`. Rewards are generated for each agent individually.
 
-Agents are rewarded +1 for locating a target that has not already been detected. It is possible
-for multiple agents to detect a target inside a step, as such rewards can either be shared
-by the locating agents, or each individual agent can get the full reward. Rewards provided can
-also be scaled by simulation step to encourage agents to develop efficient search patterns.
+Agents are rewarded +1 for locating a target that has not already been detected. There are
+multiple optional reward behaviours:
+
+- It is possible for multiple agents to detect the same target inside a step. Rewards can be
+  evenly distributed between the locating agents, or the full reward can be awarded to each
+  agent irrespectively.
+- Rewards can be linearly scaled by the current environment step like
+  ```
+  scaled_rewards = rewards * (time_limit - step) / time_limit
+  ```
+  such that rewards decrease over time.
+
+By default, rewards are shared between finders, but not scaled. Permutations of these rules can
+found in `search_and_rescue.reward`, and the reward function can be customised by implementing
+the `RewardFn` interface.
