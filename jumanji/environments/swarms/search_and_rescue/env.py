@@ -33,7 +33,7 @@ from jumanji.environments.swarms.search_and_rescue.observations import (
     AgentAndTargetObservationFn,
     ObservationFn,
 )
-from jumanji.environments.swarms.search_and_rescue.reward import RewardFn, SharedRewardFn
+from jumanji.environments.swarms.search_and_rescue.reward import IndividualRewardFn, RewardFn
 from jumanji.environments.swarms.search_and_rescue.types import Observation, State, TargetState
 from jumanji.environments.swarms.search_and_rescue.viewer import SearchAndRescueViewer
 from jumanji.types import TimeStep, restart, termination, transition
@@ -76,17 +76,13 @@ class SearchAndRescue(Environment):
     - reward: jax array (float) of shape (num_searchers,)
         Arrays of individual agent rewards. A reward of +1 is granted when an agent
         comes into contact range with a target that has not yet been found, and
-        the target is within the searchers view cone. There are optional reward
-        behaviours
-
-        - It is possible for targets to be found simultaneously by multiple agents in
-          the same step. The reward can either be distributed between the finding agents,
-          or each agent can be assigned the full reward.
-        - Rewards can either decrease linearly with time (i.e. 0 reward is awarded at the
-          final step) or full rewards can be generated irrespective of step.
-
-        By default, rewards are shared between finding agents, but not scaled by time.
-        Rewards can be further customised by implementing the `RewardFn` interface.
+        the target is within the searchers view cone. It is possible for multiple
+        agents to newly find the same target within a given step, by default
+        in this case the reward is split between the locating agents. By default,
+        rewards granted linearly decrease over time, with zero reward granted
+        at the environment time-limit. These defaults can be modified by flags
+        in `IndividualRewardFn`, or further customised by  implementing the `RewardFn`
+        interface.
 
     - state: `State`
         - searchers: `AgentState`
@@ -154,8 +150,9 @@ class SearchAndRescue(Environment):
             generator: Initial state `Generator` instance. Defaults to `RandomGenerator`
                 with 50 targets and 2 searchers, with targets uniformly distributed
                 across the environment.
-            reward_fn: Reward aggregation function. Defaults to `SharedRewardFn` where
-                agents share rewards if they locate a target simultaneously.
+            reward_fn: Reward aggregation function. Defaults to `IndividualRewardFn` where
+                agents split rewards if they locate a target simultaneously, and
+                rewards linearly decrease to zero over time.
             observation: Agent observation view generation function. Defaults to
                 `AgentAndTargetObservationFn` where all targets (found and unfound)
                 and other searching agents are included in the generated view.
@@ -174,7 +171,7 @@ class SearchAndRescue(Environment):
         self._target_dynamics = target_dynamics or RandomWalk(0.001)
         self.generator = generator or RandomGenerator(num_targets=50, num_searchers=2)
         self._viewer = viewer or SearchAndRescueViewer()
-        self._reward_fn = reward_fn or SharedRewardFn()
+        self._reward_fn = reward_fn or IndividualRewardFn()
         self._observation_fn = observation or AgentAndTargetObservationFn(
             num_vision=64,
             searcher_vision_range=0.25,

@@ -22,9 +22,9 @@ space is a uniform square space, wrapped at the boundaries.
 Many aspects of the environment can be customised:
 
 - Agent observations can be customised by implementing the `ObservationFn` interface.
-- Rewards can be customised, to allow for time dependent rewards, and to distribute
-  rewards between agents that find a target simultaneously in the same step.
-- Target dynamics can be customised to model various search scenarios.
+- Rewards can be customised by implementing the `RewardFn` interface.
+- Target dynamics can be customised to model various search scenarios by implementing the
+  `TargetDynamics` interface.
 
 ## Observations
 
@@ -74,18 +74,8 @@ by the `min_speed` and `max_speed` parameters.
 
 Jax array (float) of `(num_searchers,)`. Rewards are generated for each agent individually.
 
-Agents are rewarded +1 for locating a target that has not already been detected. There are
-multiple optional reward behaviours:
-
-- It is possible for multiple agents to detect the same target inside a step. Rewards can be
-  evenly distributed between the locating agents, or the full reward can be awarded to each
-  agent irrespectively.
-- Rewards can be linearly scaled by the current environment step like
-  ```
-  scaled_rewards = rewards * (time_limit - step) / time_limit
-  ```
-  such that rewards decrease over time.
-
-By default, rewards are shared between finders, but not scaled. Permutations of these rules can
-found in `search_and_rescue.reward`, and the reward function can be customised by implementing
-the `RewardFn` interface.
+Agents are rewarded +1 for locating a target that has not already been detected. It is possible
+for multiple agents to newly detect the same target inside a step. By default, the reward is
+split between the locating agents if this is the case. By default, rewards granted linearly
+decrease over time, from +1 to 0 at the final step. The reward function can be customised by
+implementing the `RewardFn` interface.
