@@ -113,21 +113,21 @@ def test_env_step(env: SearchAndRescue, key: chex.PRNGKey, env_size: float) -> N
     )
 
 
-def test_env_does_not_smoke(multi_obs_env: SearchAndRescue) -> None:
+def test_env_does_not_smoke(env: SearchAndRescue) -> None:
     """Test that we can run an episode without any errors."""
-    multi_obs_env.time_limit = 10
+    env.time_limit = 10
 
     def select_action(action_key: chex.PRNGKey, _state: Observation) -> chex.Array:
         return jax.random.uniform(
-            action_key, (multi_obs_env.generator.num_searchers, 2), minval=-1.0, maxval=1.0
+            action_key, (env.generator.num_searchers, 2), minval=-1.0, maxval=1.0
         )
 
-    check_env_does_not_smoke(multi_obs_env, select_action=select_action)
+    check_env_does_not_smoke(env, select_action=select_action)
 
 
-def test_env_specs_do_not_smoke(multi_obs_env: SearchAndRescue) -> None:
+def test_env_specs_do_not_smoke(env: SearchAndRescue) -> None:
     """Test that we can access specs without any errors."""
-    check_env_specs_does_not_smoke(multi_obs_env)
+    check_env_specs_does_not_smoke(env)
 
 
 def test_target_detection(env: SearchAndRescue, key: chex.PRNGKey) -> None:

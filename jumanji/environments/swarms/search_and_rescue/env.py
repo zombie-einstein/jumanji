@@ -30,7 +30,7 @@ from jumanji.environments.swarms.search_and_rescue import utils
 from jumanji.environments.swarms.search_and_rescue.dynamics import RandomWalk, TargetDynamics
 from jumanji.environments.swarms.search_and_rescue.generator import Generator, RandomGenerator
 from jumanji.environments.swarms.search_and_rescue.observations import (
-    AgentAndAllTargetObservationFn,
+    AgentAndTargetObservationFn,
     ObservationFn,
 )
 from jumanji.environments.swarms.search_and_rescue.reward import RewardFn, SharedRewardFn
@@ -57,12 +57,10 @@ class SearchAndRescue(Environment):
     - observation: `Observation`
         searcher_views: jax array (float) of shape (num_searchers, channels, num_vision)
             Individual local views of positions of other agents and targets, where
-            channels can be used to differentiate between agents and targets.
+            channels can be used to differentiate between agents and targets types.
             Each entry in the view indicates the distance to another agent/target
             along a ray from the agent, and is -1.0 if nothing is in range along the ray.
-            The view model can be customised using an `ObservationFn` implementation, e.g.
-            the view can include agents and all targets, agents and found targets, or
-            just other agents.
+            The view model can be customised by implementing the  `ObservationFn` interface.
         targets_remaining: (float) Number of targets remaining to be found from
             the total scaled to the range [0, 1] (i.e. a value of 1.0 indicates
             all the targets are still to be found).
@@ -159,7 +157,7 @@ class SearchAndRescue(Environment):
             reward_fn: Reward aggregation function. Defaults to `SharedRewardFn` where
                 agents share rewards if they locate a target simultaneously.
             observation: Agent observation view generation function. Defaults to
-                `AgentAndAllTargetObservationFn` where all targets (found and unfound)
+                `AgentAndTargetObservationFn` where all targets (found and unfound)
                 and other searching agents are included in the generated view.
         """
 
@@ -177,9 +175,10 @@ class SearchAndRescue(Environment):
         self.generator = generator or RandomGenerator(num_targets=50, num_searchers=2)
         self._viewer = viewer or SearchAndRescueViewer()
         self._reward_fn = reward_fn or SharedRewardFn()
-        self._observation_fn = observation or AgentAndAllTargetObservationFn(
+        self._observation_fn = observation or AgentAndTargetObservationFn(
             num_vision=64,
-            vision_range=0.25,
+            searcher_vision_range=0.25,
+            target_vision_range=0.1,
             view_angle=searcher_view_angle,
             agent_radius=0.02,
             env_size=self.generator.env_size,
@@ -196,7 +195,8 @@ class SearchAndRescue(Environment):
                 f" - max searcher acceleration: {self.searcher_params.max_accelerate}",
                 f" - searcher min speed: {self.searcher_params.min_speed}",
                 f" - searcher max speed: {self.searcher_params.max_speed}",
-                f" - search vision range: {self._observation_fn.vision_range}",
+                f" - search vision range: {self._observation_fn.searcher_vision_range}",
+                f" - target vision range: {self._observation_fn.target_vision_range}",
                 f" - search view angle: {self._observation_fn.view_angle}",
                 f" - target contact range: {self.target_contact_range}",
                 f" - num vision: {self._observation_fn.num_vision}",

@@ -21,7 +21,7 @@ space is a uniform square space, wrapped at the boundaries.
 
 Many aspects of the environment can be customised:
 
-- Agent observations can include targets as well as other searcher agents.
+- Agent observations can be customised by implementing the `ObservationFn` interface.
 - Rewards can be customised, to allow for time dependent rewards, and to distribute
   rewards between agents that find a target simultaneously in the same step.
 - Target dynamics can be customised to model various search scenarios.
@@ -42,7 +42,7 @@ Many aspects of the environment can be customised:
   where `-1.0` indicates there are no agents along that ray, and `0.5` is the normalised
   distance to the other agent. Channels in the segmented view are used to differentiate
   between different agents/targets and can be customised. By default, the view has three
-  channels representing other agents, found targets, and unlocated targets.
+  channels representing other agents, found targets, and unlocated targets respectively.
 - `targets_remaining`: float in the range `[0, 1]`. The normalised number of targets
   remaining to be detected (i.e. 1.0 when no targets have been found).
 - `step`: int in the range `[0, time_limit]`. The current simulation step.
