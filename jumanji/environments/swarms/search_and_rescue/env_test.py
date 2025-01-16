@@ -132,7 +132,7 @@ def test_env_specs_do_not_smoke(env: SearchAndRescue) -> None:
 
 def test_target_detection(env: SearchAndRescue, key: chex.PRNGKey) -> None:
     # Keep targets in one location
-    env._target_dynamics = RandomWalk(step_size=0.0)
+    env._target_dynamics = RandomWalk(acc_std=0.1, vel_max=0.0)
     env.generator.num_targets = 1
 
     # Agent facing wrong direction should not see target
@@ -183,7 +183,7 @@ def test_target_detection(env: SearchAndRescue, key: chex.PRNGKey) -> None:
 
 def test_multi_target_detection(env: SearchAndRescue, key: chex.PRNGKey) -> None:
     # Keep targets in one location
-    env._target_dynamics = RandomWalk(step_size=0.0)
+    env._target_dynamics = RandomWalk(acc_std=0.1, vel_max=0.0)
     env.searcher_params = AgentParams(
         max_rotate=0.1,
         max_accelerate=0.01,

@@ -168,7 +168,7 @@ class SearchAndRescue(Environment):
             view_angle=searcher_view_angle,
         )
         self.time_limit = time_limit
-        self._target_dynamics = target_dynamics or RandomWalk(0.001)
+        self._target_dynamics = target_dynamics or RandomWalk(acc_std=0.002, vel_max=0.005)
         self.generator = generator or RandomGenerator(num_targets=50, num_searchers=2)
         self._viewer = viewer or SearchAndRescueViewer()
         self._reward_fn = reward_fn or IndividualRewardFn()
