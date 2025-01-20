@@ -169,7 +169,7 @@ class SearchAndRescue(Environment):
             num_vision=128,
             searcher_vision_range=0.4,
             target_vision_range=0.1,
-            view_angle=0.5,
+            view_angle=0.4,
             agent_radius=target_contact_range,
             env_size=self.generator.env_size,
         )
